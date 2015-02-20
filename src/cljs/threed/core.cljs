@@ -14,7 +14,7 @@
 ;; NOTE: margins on page must be zero for picking to work
 ;; each mesh must have it's own material for picking to work
 
-(set! *enable-console-print* true)
+(enable-console-print!)
 
 (defonce app-state (atom {:text "Hello Chestnut!"}))
 

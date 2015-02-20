@@ -14,7 +14,6 @@
      (prepend (html [:script {:type "text/javascript" :src "/react/react.js"}]))
      (prepend (html [:script {:type "text/javascript" :src "/js/threejs/three.js"}]))
      (append  (html [:script {:type "text/javascript"} "goog.require('threed.dev')"]))))
-     (prepend (html [:script {:type "text/javascript" :src "/js/threejs/three.js"}]))
 
 (defn browser-repl []
   (piggieback/cljs-repl :repl-env (weasel/repl-env :ip "0.0.0.0" :port 9001)))

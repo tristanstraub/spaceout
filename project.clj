@@ -38,7 +38,8 @@
                  ]
 
   :plugins [[lein-cljsbuild "1.0.3"]
-            [lein-environ "1.0.0"]]
+            [lein-environ "1.0.0"]
+            [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]]
 
   :min-lein-version "2.5.0"
 
@@ -48,34 +49,56 @@
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         :source-map    "resources/public/js/out.js.map"
-                                        :preamble      ["react/react.min.js"]
-                                        :externs       ["react/externs/react.js"]
+                                        ;; :preamble      ["react/react.min.js"]
+                                        ;; :externs       ["react/externs/react.js"]
+                                        :preamble      ["public/js/threejs/three.min.js"]
+                                        :externs       ["public/js/threejs/three.js"]
                                         :optimizations :none
                                         :pretty-print  true}}}}
 
-  :profiles {:dev {:repl-options {:init-ns threed.server
-                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
-                                                     cljx.repl-middleware/wrap-cljx]}
+  :cljx {:builds [{:source-paths ["src/cljx"]
+                   :output-path "target/generated/clj"
+                   :rules :clj}
+                  {:source-paths ["src/cljx"]
+                   :output-path "target/generated/cljs"
+                   :rules :cljs}]}
 
-                   :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
-                             [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]]
+  :profiles { ;; :dev {:repl-options {:init-ns threed.server
+             ;;                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
+             ;;                                         cljx.repl-middleware/wrap-cljx]}
 
-                   :figwheel {:http-server-root "public"
-                              :port 3449
-                              :css-dirs ["resources/public/css"]}
+             ;;       :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
+             ;;                 ]
 
-                   :env {:is-dev true}
+             ;;       :figwheel {:http-server-root "public"
+             ;;                  :port 3449
+             ;;                  :css-dirs ["resources/public/css"]}
 
-                   :hooks [cljx.hooks]
+             ;;       :env {:is-dev true}
 
-                   :cljx {:builds [{:source-paths ["src/cljx"]
-                                    :output-path "target/generated/clj"
-                                    :rules :clj}
-                                   {:source-paths ["src/cljx"]
-                                    :output-path "target/generated/cljs"
-                                    :rules :cljs}]}
+             ;;       :hooks [cljx.hooks]
 
-                   :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
+             ;;       :cljx {:builds [{:source-paths ["src/cljx"]
+             ;;                        :output-path "target/generated/clj"
+             ;;                        :rules :clj}
+             ;;                       {:source-paths ["src/cljx"]
+             ;;                        :output-path "target/generated/cljs"
+             ;;                        :rules :cljs}]}
+
+             ;;       :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
+
+             :production {:hooks [cljx.hooks leiningen.cljsbuild]
+                          :env {:production true}
+                          :omit-source true
+                          :aot :all
+                          :cljsbuild {:builds {:app
+                                               {:source-paths ["env/prod/cljs"]
+                                                :compiler
+                                                {
+                                                 :closure-warnings {:externs-validation :off
+                                                                    :non-standard-jsdoc :off}
+                                                 :optimizations :none
+                                                 :pretty-print false}}}}}
 
              :uberjar {:hooks [cljx.hooks leiningen.cljsbuild]
                        :env {:production true}
@@ -84,5 +107,8 @@
                        :cljsbuild {:builds {:app
                                             {:source-paths ["env/prod/cljs"]
                                              :compiler
-                                             {:optimizations :advanced
+                                             {
+                                              :closure-warnings {:externs-validation :off
+                                                                 :non-standard-jsdoc :off}
+                                              :optimizations :advanced
                                               :pretty-print false}}}}}})
