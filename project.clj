@@ -6,17 +6,19 @@
 
   :source-paths ["src/clj" "src/cljs" "target/generated/clj" "target/generated/cljx"]
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2371" :scope "provided"]
-                 [ring "1.3.1"]
+  :dependencies [
+                 [com.cemerick/piggieback "0.1.3"]
                  [compojure "1.2.0"]
                  [enlive "1.1.5"]
-                 [om "0.7.3"]
-                 [figwheel "0.1.4-SNAPSHOT"]
                  [environ "1.0.0"]
-                 [com.cemerick/piggieback "0.1.3"]
+                 [figwheel "0.1.4-SNAPSHOT"]
+                 [leiningen "2.5.0"]
+                 [om "0.7.3"]
+                 [org.clojure/clojure "1.6.0"]
+                 [org.clojure/clojurescript "0.0-2371" :scope "provided"]
+                 [ring "1.3.1"]
                  [weasel "0.4.0-SNAPSHOT"]
-                 [leiningen "2.5.0"]]
+                 ]
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-environ "1.0.0"]]
