@@ -6,18 +6,24 @@
 
   :source-paths ["src/clj" "src/cljs" "target/generated/clj" "target/generated/cljx"]
 
-  :dependencies [
-                 [com.cemerick/piggieback "0.1.3"]
-                 [compojure "1.2.0"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
+                 [org.clojure/clojurescript "0.0-2816" :scope "provided"]
+                 [com.taoensso/encore "1.21.0"]
+                 [ring "1.3.2"]
+                 [ring/ring-defaults "0.1.2"]
+                 [compojure "1.3.1"]
                  [enlive "1.1.5"]
+                 [om "0.8.0-rc1"]
+                 [sablono "0.3.4"]
                  [environ "1.0.0"]
-                 [figwheel "0.1.4-SNAPSHOT"]
-                 [leiningen "2.5.0"]
-                 [om "0.7.3"]
-                 [org.clojure/clojure "1.6.0"]
-                 [org.clojure/clojurescript "0.0-2371" :scope "provided"]
-                 [ring "1.3.1"]
-                 [weasel "0.4.0-SNAPSHOT"]
+                 [com.taoensso/carmine "2.9.0"]
+                 [ring-middleware-format "0.4.0"]
+                 [ring/ring-json "0.3.1"]
+                 [com.cemerick/piggieback "0.1.5"]
+                 [fogus/ring-edn "0.2.0"]
+                 [om-sync "0.1.1"]
+                 [http-kit "2.1.19"]
+
                  ]
 
   :plugins [[lein-cljsbuild "1.0.3"]
@@ -39,6 +45,10 @@
   :profiles {:dev {:repl-options {:init-ns threed.server
                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
                                                      cljx.repl-middleware/wrap-cljx]}
+
+                   :dependencies [[figwheel "0.1.4-SNAPSHOT"]
+                                  [leiningen "2.5.0"]
+                                  [weasel "0.4.0-SNAPSHOT"]]
 
                    :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
                              [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]]
