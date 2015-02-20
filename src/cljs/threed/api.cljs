@@ -1,7 +1,6 @@
 (ns threed.api
   (:require [cljs.core.async :refer [put! chan <!]]
-            [om-sync.util :refer [edn-xhr]]
-            [threed.comms :as comms]))
+            [om-sync.util :refer [edn-xhr]]))
 
 (defn events->positions [events]
   (reduce (fn [positions event]
@@ -19,7 +18,7 @@
   (edn-xhr
    {:method :post
     :url "/events"
-    :data {:event/name "add" :event/position pos ;; :csrf-token (:csrf-token @comms/chsk-state)
+    :data {:event/name "add" :event/position pos
            }
     :on-complete
     (fn [res]
