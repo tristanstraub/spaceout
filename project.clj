@@ -52,6 +52,7 @@
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         :source-map    "resources/public/js/out.js.map"
+                                        :externs       ["public/js/threejs/three.js"]
                                         :optimizations :none
                                         :pretty-print  true}}}}
 
@@ -62,22 +63,22 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
-  :profiles { ;; :dev {:repl-options {:init-ns threed.server
-              ;;                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
-              ;;                                         cljx.repl-middleware/wrap-cljx]}
+  :profiles {:nrepl {:repl-options {:init-ns threed.server
+                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
+                                                     cljx.repl-middleware/wrap-cljx]}
 
-              ;;       :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
-              ;;                 ]
+                   :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
+                             ]
 
-              ;;       :figwheel {:http-server-root "public"
-              ;;                  :port 3449
-              ;;                  :css-dirs ["resources/public/css"]}
+                   :figwheel {:http-server-root "public"
+                              :port 3449
+                              :css-dirs ["resources/public/css"]}
 
-              ;;       :env {:is-dev true}
+                   :env {:is-dev true}
 
-              ;;       :hooks [cljx.hooks]
+                   :hooks [cljx.hooks]
 
-              ;;       :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
+                   :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
 
              :production {:hooks [cljx.hooks leiningen.cljsbuild]
                           :env {:production true}
@@ -92,11 +93,6 @@
                                                  :closure-warnings {:externs-validation :off
                                                                     :non-standard-jsdoc :off}
                                                  :optimizations :advanced
-                                                 ;;:preamble      ["public/js/threejs/three.min.js"]
-                                                 :externs       ["public/js/threejs/three.js"]
-
-                                                 ;; :foreign-libs [{:file "public/js/threejs/three.js"
-                                                 ;;                 :provides ["THREE"]}]
                                                  :pretty-print false}}}}}
 
              :uberjar {:hooks [cljx.hooks leiningen.cljsbuild]
@@ -107,6 +103,8 @@
                                             {:source-paths ["env/prod/cljs"]
                                              :compiler
                                              {
+                                              ;; don't forget this line, or your file will be empty
+                                              :main threed.prod
                                               :closure-warnings {:externs-validation :off
                                                                  :non-standard-jsdoc :off}
                                               :optimizations :advanced
