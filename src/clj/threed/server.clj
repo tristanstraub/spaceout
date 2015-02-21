@@ -30,6 +30,7 @@
 (defroutes routes
   (resources "/")
   ;;(resources "/react" {:root "react"})
+
   (GET "/ws" [] comms/ws)
 
   (wrap-restful-response (GET "/events" [] {:body {:events @events}}) :formats [:edn])
