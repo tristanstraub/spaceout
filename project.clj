@@ -63,7 +63,9 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
-  :profiles {:dev {:repl-options {:init-ns threed.server
+  :profiles {:default []
+
+             :dev {:repl-options {:init-ns threed.server
                                    :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
                                                       cljx.repl-middleware/wrap-cljx]}
 
