@@ -220,7 +220,8 @@
     (set! (.-z (.-position camera)) 10)
     (.lookAt camera (js/THREE.Vector3. 0 0 0))
 
-    (render)))
+    (render))
+  )
 
 
 

@@ -17,7 +17,10 @@
 
                  [compojure "1.2.0"]
                  [enlive "1.1.5"]
-                 [sablono "0.3.4"]
+                 ;;[om "0.8.0-rc1"]
+                 [org.omcljs/om "0.8.8"]
+                 [sablono "0.3.4" ;; :exclusions [com.facebook/react]
+                  ]
                  [environ "1.0.0"]
 
                  [com.taoensso/carmine "2.9.0"]
@@ -31,7 +34,7 @@
                  [figwheel "0.1.6-SNAPSHOT"]
 
                  [leiningen "2.5.0"]
-                 [om "0.8.0-rc1"]
+
                  [ring "1.3.1"]
                  [weasel "0.6.0-SNAPSHOT"]
 
@@ -49,10 +52,6 @@
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         :source-map    "resources/public/js/out.js.map"
-                                        ;; :preamble      ["react/react.min.js"]
-                                        ;; :externs       ["react/externs/react.js"]
-                                        :preamble      ["public/js/threejs/three.min.js"]
-                                        :externs       ["public/js/threejs/three.js"]
                                         :optimizations :none
                                         :pretty-print  true}}}}
 
@@ -63,29 +62,22 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
-  :profiles { ;; :dev {:repl-options {:init-ns threed.server
-             ;;                      :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
-             ;;                                         cljx.repl-middleware/wrap-cljx]}
+  :profiles { :dev {:repl-options {:init-ns threed.server
+                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
+                                                      cljx.repl-middleware/wrap-cljx]}
 
-             ;;       :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
-             ;;                 ]
+                    :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
+                              ]
 
-             ;;       :figwheel {:http-server-root "public"
-             ;;                  :port 3449
-             ;;                  :css-dirs ["resources/public/css"]}
+                    :figwheel {:http-server-root "public"
+                               :port 3449
+                               :css-dirs ["resources/public/css"]}
 
-             ;;       :env {:is-dev true}
+                    :env {:is-dev true}
 
-             ;;       :hooks [cljx.hooks]
+                    :hooks [cljx.hooks]
 
-             ;;       :cljx {:builds [{:source-paths ["src/cljx"]
-             ;;                        :output-path "target/generated/clj"
-             ;;                        :rules :clj}
-             ;;                       {:source-paths ["src/cljx"]
-             ;;                        :output-path "target/generated/cljs"
-             ;;                        :rules :cljs}]}
-
-             ;;       :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
+                    :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
 
              :production {:hooks [cljx.hooks leiningen.cljsbuild]
                           :env {:production true}
@@ -95,9 +87,16 @@
                                                {:source-paths ["env/prod/cljs"]
                                                 :compiler
                                                 {
+                                                 ;; don't forget this line, or your file will be empty
+                                                 :main threed.prod
                                                  :closure-warnings {:externs-validation :off
                                                                     :non-standard-jsdoc :off}
-                                                 :optimizations :none
+                                                 :optimizations :advanced
+                                                 :preamble      ["public/js/threejs/three.js"]
+                                                 :externs       ["public/js/threejs/three.js"]
+
+                                                 ;; :foreign-libs [{:file "public/js/threejs/three.js"
+                                                 ;;                 :provides ["THREE"]}]
                                                  :pretty-print false}}}}}
 
              :uberjar {:hooks [cljx.hooks leiningen.cljsbuild]

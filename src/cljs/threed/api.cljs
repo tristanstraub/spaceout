@@ -14,6 +14,7 @@
           #{}
           events))
 
+
 (defn send-position! [pos]
   (edn-xhr
    {:method :post

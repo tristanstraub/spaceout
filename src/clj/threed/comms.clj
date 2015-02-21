@@ -14,6 +14,7 @@
   (println "received" msg))
 
 (defn send-events! [events]
+  (println "send-events! to clients" @clients)
   (doseq [client @clients]
     (send! (key client) (pr-str events))))
 

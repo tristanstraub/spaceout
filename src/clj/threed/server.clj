@@ -29,7 +29,7 @@
 
 (defroutes routes
   (resources "/")
-  (resources "/react" {:root "react"})
+  ;;(resources "/react" {:root "react"})
   (GET "/ws" [] comms/ws)
 
   (wrap-restful-response (GET "/events" [] {:body {:events @events}}) :formats [:edn])
@@ -37,7 +37,7 @@
   ;;wrap-json-body
   (POST "/events" {params :params}
         (do (swap! events conj params)
-            (println params)
+            (println "Send events" @events)
             (comms/send-events! @events)
             {:status 200 :body "OK"}))
 
