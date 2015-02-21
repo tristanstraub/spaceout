@@ -63,37 +63,22 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
-  :profiles {:nrepl {:repl-options {:init-ns threed.server
-                                  :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
-                                                     cljx.repl-middleware/wrap-cljx]}
+  :profiles {:dev {:repl-options {:init-ns threed.server
+                                   :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
+                                                      cljx.repl-middleware/wrap-cljx]}
 
-                   :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
-                             ]
+                    :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
+                              ]
 
-                   :figwheel {:http-server-root "public"
-                              :port 3449
-                              :css-dirs ["resources/public/css"]}
+                    :figwheel {:http-server-root "public"
+                               :port 3449
+                               :css-dirs ["resources/public/css"]}
 
-                   :env {:is-dev true}
+                    :env {:is-dev true}
 
-                   :hooks [cljx.hooks]
+                    :hooks [cljx.hooks]
 
-                   :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
-
-             :production {:hooks [cljx.hooks leiningen.cljsbuild]
-                          :env {:production true}
-                          :omit-source true
-                          :aot :all
-                          :cljsbuild {:builds {:app
-                                               {:source-paths ["env/prod/cljs"]
-                                                :compiler
-                                                {
-                                                 ;; don't forget this line, or your file will be empty
-                                                 :main threed.prod
-                                                 :closure-warnings {:externs-validation :off
-                                                                    :non-standard-jsdoc :off}
-                                                 :optimizations :advanced
-                                                 :pretty-print false}}}}}
+                    :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
 
              :uberjar {:hooks [cljx.hooks leiningen.cljsbuild]
                        :env {:production true}
