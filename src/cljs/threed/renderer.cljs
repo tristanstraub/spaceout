@@ -10,6 +10,8 @@
             [threed.math :refer [vec-add vec-scale axis-rotation-matrix3 matrix-vec-mult]]
             [threed.api :refer [<get-positions send-position!]]))
 
+(defonce scene (atom nil))
+
 (defonce current-positions (atom []))
 (defonce new-positions (atom []))
 
@@ -113,7 +115,7 @@
 (defn start-renderer [el positions events]
   (reset! current-positions positions)
 
-  (let [scene (js/THREE.Scene.)
+  (let [scene (reset! scene (js/THREE.Scene.))
         width (.-innerWidth js/window)
         height (.-innerHeight js/window)
         camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000 )
@@ -220,11 +222,27 @@
     (set! (.-z (.-position camera)) 10)
     (.lookAt camera (js/THREE.Vector3. 0 0 0))
 
-    (render))
-  )
+    (render)))
 
 
 
 (defn update-positions! [positions]
   (reset! new-positions (clojure.set/difference positions @current-positions))
   (reset! current-positions positions))
+
+(defn generate-world [pos]
+  (reduce concat (->> (range 10)
+                      (map (fn [i]
+                             (reduce concat (->> (range 10)
+                                                 (map (fn [j]
+                                                        (->> (range 10)
+                                                             (map (fn [k] (vec-add pos [i j k])))))))))))))
+
+(defn add-blocks! [scene blocks]
+  (doseq [block blocks]
+    (send-position! block)
+    ;;(add-block! scene block)
+    ))
+
+(defn add-new-world! [scene pos]
+  (add-blocks! scene (generate-world pos)))
