@@ -37,13 +37,11 @@
 
   ;;wrap-json-body
   (POST "/events" {params :params}
-        (do (swap! events conj params)
-            (println "Send events" @events)
-            (comms/send-events! @events)
+        (do (swap! events concat (:events params))
+            ;;(comms/send-events! @events)
             {:status 200 :body "OK"}))
 
   (GET "/*" req (page)))
-
 
 (def http-handler
   (let [ring-defaults-config api-defaults
@@ -78,4 +76,6 @@
   (run-web-server port))
 
 (defn -main [& [port]]
+  (add-watch events :key (fn [k r os events]
+                           (comms/send-events! events)))
   (run port))
