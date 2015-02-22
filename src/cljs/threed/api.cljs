@@ -18,7 +18,7 @@
 (defn send-position! [pos]
   (edn-xhr
    {:method :post
-    :url "/events"
+    :url "events" ;; TODO url builder
     :data {:event/name "add" :event/position pos
            }
     :on-complete
@@ -29,7 +29,7 @@
   (let [result (chan)]
     (edn-xhr
      {:method :get
-      :url "/events"
+      :url "events"
       :on-complete
       (fn [res]
         (put! result (events->positions (:events res))))
