@@ -16,11 +16,11 @@
 
 
 (defn send-position! [pos]
+
   (edn-xhr
    {:method :post
     :url "events" ;; TODO url builder
-    :data {:event/name "add" :event/position pos
-           }
+    :data {:events [{:event/name "add" :event/position pos}]}
     :on-complete
     (fn [res]
       (println "server response:" res))}))
