@@ -15,7 +15,8 @@
             [ring.middleware.edn :refer [wrap-edn-params]]
             [org.httpkit.server :as http-kit]
             [threed.comms :as comms]
-            [compojure.handler :refer [site] :as handler]))
+            [compojure.handler :refer [site] :as handler]
+            [ring.middleware.logger :as logger]))
 
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
@@ -57,7 +58,8 @@
     (-> (if is-dev?
           (reload/wrap-reload (wrap-defaults #'routes ring-defaults-config))
           (wrap-defaults routes ring-defaults-config))
-        (wrap-edn-params))))
+        (wrap-edn-params)
+        (logger/wrap-with-logger))))
 
 
 

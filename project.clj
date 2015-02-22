@@ -38,6 +38,7 @@
                  [ring "1.3.1"]
                  [weasel "0.6.0-SNAPSHOT"]
 
+                 [ring.middleware.logger "0.5.0"]
                  ]
 
   :plugins [[lein-cljsbuild "1.0.3"]
