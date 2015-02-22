@@ -42,6 +42,7 @@
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-environ "1.0.0"]
+            [lein-figwheel "0.1.4-SNAPSHOT"]
             [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]]
 
   :min-lein-version "2.5.0"
@@ -52,7 +53,6 @@
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         :source-map    "resources/public/js/out.js.map"
-                                        :externs       ["public/threejs/three.js"]
                                         :optimizations :none
                                         :pretty-print  true}}}}
 
@@ -63,15 +63,13 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
-  :profiles {;; TODO don't commit without this. Find out why cider breaks on parameters "with-profile"
-             ;;:default []
+  :profiles {:default []
 
              :dev {:repl-options {:init-ns threed.server
                                    :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
                                                       cljx.repl-middleware/wrap-cljx]}
 
-                    :plugins [[lein-figwheel "0.1.4-SNAPSHOT"]
-                              ]
+
 
                     :figwheel {:http-server-root "public"
                                :port 3449
@@ -97,5 +95,6 @@
                                               :main threed.prod
                                               :closure-warnings {:externs-validation :off
                                                                  :non-standard-jsdoc :off}
+                                              :externs       ["public/threejs/three.js"]
                                               :optimizations :advanced
                                               :pretty-print false}}}}}})
