@@ -63,7 +63,8 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
-  :profiles {:default []
+  :profiles {;; TODO don't commit without this. Find out why cider breaks on parameters "with-profile"
+             ;;:default []
 
              :dev {:repl-options {:init-ns threed.server
                                    :nrepl-middleware [cemerick.piggieback/wrap-cljs-repl
@@ -81,6 +82,8 @@
                     :hooks [cljx.hooks]
 
                     :cljsbuild {:builds {:app {:source-paths ["env/dev/cljs"]}}}}
+
+             :nrepl [:base :system :user :provided :dev]
 
              :uberjar {:hooks [cljx.hooks leiningen.cljsbuild]
                        :env {:production true}
