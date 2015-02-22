@@ -52,7 +52,7 @@
                              :compiler {:output-to     "resources/public/js/app.js"
                                         :output-dir    "resources/public/js/out"
                                         :source-map    "resources/public/js/out.js.map"
-                                        :externs       ["public/js/threejs/three.js"]
+                                        :externs       ["public/threejs/three.js"]
                                         :optimizations :none
                                         :pretty-print  true}}}}
 
