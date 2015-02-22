@@ -59,7 +59,6 @@
           v (.. (:object intersection) -meta)
           pos (if (and n v) (mapv + n v))]
       (when pos
-        (add-block! scene pos)
         (send-position! pos)))))
 
 (defn update-camera [keys camera light seconds]
