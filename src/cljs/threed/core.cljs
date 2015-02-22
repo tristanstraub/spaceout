@@ -7,7 +7,7 @@
             [sablono.core :refer-macros [html]]
             [om-sync.util :refer [edn-xhr]]
             [threed.ui.events :refer [get-events]]
-            [threed.api :refer [<get-positions events->positions]]
+            [threed.api :refer [<get-positions events->positions start-api-queue!]]
             [threed.renderer :refer [start-renderer update-positions!]]
             ))
 
@@ -50,6 +50,7 @@
 
 
 (defn main []
+  (start-api-queue!)
 
   (println "start")
   (let [ui-events (get-events)]
