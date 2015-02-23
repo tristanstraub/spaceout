@@ -51,7 +51,7 @@
 (defprotocol IRender
   (render [this]))
 
-(defrecord RenderContext [el positions events
+(defrecord RenderContext [positions events
                           width height
                           scene camera renderer
                           geometry texture
@@ -70,7 +70,6 @@
     (set! (.. light -position -z) 130)
 
     (.setSize renderer width height)
-    (.appendChild el (.-domElement renderer))
 
     (doseq [pos positions]
       (add-block! scene pos))
@@ -119,12 +118,11 @@
 
         (.render renderer scene camera)))))
 
-(defn render-context [el positions events]
+(defn render-context [positions events]
   (let [width (.-innerWidth js/window)
         height (.-innerHeight js/window)]
     (map->RenderContext
-     {:el el
-      :positions positions
+     {:positions positions
       :events events
 
       :scene (reset! scene (js/THREE.Scene.))
@@ -144,10 +142,12 @@
 (defn start-renderer [el positions events]
   (reset! current-positions positions)
 
-  (let [context (render-context el positions events)
+  (let [context (render-context positions events)
         do-render (fn cb []
                     (js/requestAnimationFrame cb)
                     (render context))]
+
+    (.appendChild el (.-domElement (:renderer context)))
 
     (initialise! context)
     (do-render)))
