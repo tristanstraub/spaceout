@@ -10,7 +10,7 @@
             [threed.math :refer [vec-add vec-scale axis-rotation-matrix3 matrix-vec-mult]]
             [threed.api :refer [<get-positions send-position!]]
             [threed.interop :refer [threed->vec set-threed-vec!]]
-            [threed.camera :refer [update-camera]]
+            [threed.camera :refer [update-camera!]]
             [threed.threejs.blocks :as blocks :refer [make-block]]
             [threed.threejs.intersection :refer [get-intersections]]
             [threed.events :as events :refer [on-mouse-move on-mouse-down on-resize]]
@@ -43,23 +43,32 @@
   (add-blocks! scene (world/generate-world pos)))
 
 (defprotocol IInitialise
-  (initialise! [this]))
+  (initialise! [this positions]))
 
 (defprotocol IRender
   (render [this]))
 
 (defprotocol IIntersections
-  (intersections [this mouse camera]))
+  (intersections [this mouse camera scene last-intersect]))
 
 (defrecord Intersector [raycaster]
   IIntersections
-  (intersections [this mouse camera]
-    (.setFromCamera raycaster mouse camera)))
+  (intersections [this mouse camera scene last-intersect]
+    (.setFromCamera raycaster mouse camera)
+
+    (let [intersects (.intersectObjects raycaster (.-children scene))]
+      (when-let [intersect (first intersects)]
+        ;; TODO move these side effects out
+        (reset! last-intersect {:object (.. intersect -object)
+                                :color (.. intersect -object -material -color getHex)
+                                :normal (threed->vec (.. intersect -face -normal))})
+
+        (.. intersect -object -material -color (setHex 0xff0000))))))
 
 (defn intersector []
   (map->Intersector {:raycaster (js/THREE.Raycaster.)}))
 
-(defrecord RenderContext [positions
+(defrecord RenderContext [
                           events
                           width height
                           scene camera renderer
@@ -68,7 +77,7 @@
                           last-intersect
                           mouse keys]
   IInitialise
-  (initialise! [this]
+  (initialise! [this positions]
     (.setClearColor renderer 0xdbf1ff 1)
     (set! (.. light -position -x) 10)
     (set! (.. light -position -y) 50)
@@ -106,58 +115,54 @@
 
         (reset! last-intersect nil)
 
-        (intersections intersector mouse camera)
+        (intersections intersector mouse camera scene last-intersect)
 
-        (let [intersects (.intersectObjects (:raycaster intersector) (.-children scene))]
-          (when-let [intersect (first intersects)]
-            (reset! last-intersect {:object (.. intersect -object)
-                                    :color (.. intersect -object -material -color getHex)
-                                    :normal (threed->vec (.. intersect -face -normal))})
-
-            (.. intersect -object -material -color (setHex 0xff0000))))
-
-        (update-camera keys camera light (.. clock (getElapsedTime)))
+        (update-camera! keys camera light (.. clock (getElapsedTime)))
 
         ;; TODO too many parameters
         (events/call-event-handlers events scene @last-intersect mouse renderer camera)
 
         (.render renderer scene camera)))))
 
-(defn render-context [positions events]
+(defn render-context [events]
   (let [width (.-innerWidth js/window)
         height (.-innerHeight js/window)]
     (map->RenderContext
-     {:positions positions
+     {;; Communications
       :events events
 
       ;; Dimensions
       :width width
       :height height
 
+      ;; Canvas
+      :renderer (js/THREE.WebGLRenderer.)
+
       ;; Scene/View
       :camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000 )
       :scene (js/THREE.Scene.)
+      :light (js/THREE.PointLight. 0xffffff)
 
       ;; Time
       :clock (js/THREE.Clock.)
 
-      :renderer (js/THREE.WebGLRenderer.)
+      ;; Mouse interactions
       :intersector (intersector)
-      :light (js/THREE.PointLight. 0xffffff)
-
       :last-intersect (atom nil)
       :mouse (js/THREE.Vector2.)
+
+      ;; Keys interactions
       :keys (atom #{})})))
 
 (defn attach-renderer [el positions events]
   (reset! current-positions positions)
 
-  (let [context (render-context positions events)
+  (let [context (render-context events)
         do-render (fn cb []
                     (js/requestAnimationFrame cb)
                     (render context))]
 
     (.appendChild el (.-domElement (:renderer context)))
 
-    (initialise! context)
+    (initialise! context positions)
     (do-render)))

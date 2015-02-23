@@ -2,7 +2,7 @@
   (:require [threed.interop :refer [threed->vec set-threed-vec!]]
             [threed.math :refer [vec-add vec-scale axis-rotation-matrix3 matrix-vec-mult]]))
 
-(defn update-camera [keys camera light seconds]
+(defn update-camera! [keys camera light seconds]
   (let [camera-pos (threed->vec (.-position camera))
         rot (threed->vec (.-rotation camera))
 
