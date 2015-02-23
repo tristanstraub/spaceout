@@ -103,9 +103,13 @@
     (if-let [events (swap-and-return! events [])]
       ;; TODO find a better syntax for this keys/keys/keys
       (let [keys (swap! keys (fn [keys] (events/events->keys keys events)))]
+
         ;; TODO move this into a side-channel
-        (doseq [pos (swap-and-return! new-positions [])]
-          (add-block! scene pos))
+        (let [newest (swap-and-return! new-positions [])]
+          (when (not (empty? newest))
+            (println "newest" newest))
+          (doseq [pos newest]
+            (add-block! scene pos)))
 
         ;; TODO move into intersector -- deal with side-effecting nature of intersector
         (when-let [last @last-intersect]

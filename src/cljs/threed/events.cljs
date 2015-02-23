@@ -1,5 +1,6 @@
 (ns threed.events
-  (:require [threed.api :refer [send-position!]]))
+  (:require [threed.api :refer [send-position!]]
+            [threed.threejs.blocks :as blocks]))
 
 ;; UI Event Handlers
 
@@ -21,6 +22,7 @@
           v (.. (:object intersection) -meta)
           pos (if (and n v) (mapv + n v))]
       (when pos
+        ;; TODO convert to actions which are dispatched to modify the universe
         (send-position! pos)))))
 
 (defn events->keys [keys events]
