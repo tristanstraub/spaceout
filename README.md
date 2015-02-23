@@ -1,3 +1,9 @@
+Run with:
+
+```sh
+lein run -m threed.server
+``
+
 Build jar:
 
 ```sh
