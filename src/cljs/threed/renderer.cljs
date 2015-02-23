@@ -45,63 +45,21 @@
 (defn add-new-world! [scene pos]
   (add-blocks! scene (world/generate-world pos)))
 
-(defn start-renderer [el positions events]
-  (reset! current-positions positions)
+(defprotocol IInitialise
+  (initialise! [this]))
 
-  (let [scene (reset! scene (js/THREE.Scene.))
-        width (.-innerWidth js/window)
-        height (.-innerHeight js/window)
-        camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000 )
-        renderer (js/THREE.WebGLRenderer.)
-        geometry (js/THREE.BoxGeometry. 1 1 1)
-        texture (js/THREE.ImageUtils.loadTexture "textures/grid.png")
-        raycaster (js/THREE.Raycaster.)
-        light (js/THREE.PointLight. 0xffffff)
+(defprotocol IRender
+  (render [this]))
 
-        clock (js/THREE.Clock.)
-
-        last-intersect (atom nil)
-
-        mouse (js/THREE.Vector2.)
-
-        keys (atom #{})
-
-        render (fn []
-                 (if-let [events (swap-and-return! events [])]
-                   (let [keys (swap! keys (fn [keys] (events/events->keys keys events)))]
-
-                     ;; add new blocks
-
-                     (doseq [pos (swap-and-return! new-positions [])]
-                       (add-block! scene pos))
-
-                     (when-let [last @last-intersect]
-                       (.. (:object last) -material -color (setHex (:color last))))
-
-                     (reset! last-intersect nil)
-
-                     (.setFromCamera raycaster mouse camera)
-
-                     (let [intersects (.intersectObjects raycaster (.-children scene))]
-                       (when-let [intersect (first intersects)]
-                         (reset! last-intersect {:object (.. intersect -object)
-                                                 :color (.. intersect -object -material -color getHex)
-                                                 :normal (threed->vec (.. intersect -face -normal))})
-
-                         (.. intersect -object -material -color (setHex 0xff0000))))
-
-                     (update-camera keys camera light (.. clock (getElapsedTime)))
-
-                     ;; TODO too many parameters
-                     (events/call-event-handlers events scene @last-intersect mouse renderer camera)
-
-
-
-                     (.render renderer scene camera))))
-        do-render (fn cb []
-                         (js/requestAnimationFrame cb)
-                         (render))]
-
+(defrecord RenderContext [el positions events
+                          width height
+                          scene camera renderer
+                          geometry texture
+                          raycaster light clock
+                          last-intersect
+                          mouse keys]
+  IInitialise
+  (initialise! [this]
     (set! (.. texture -wrapS) js/THREE.RepeatWrapping)
     (set! (.. texture -wrapT) js/THREE.RepeatWrapping)
     (.. texture -repeat (set 2 2))
@@ -112,7 +70,7 @@
     (set! (.. light -position -z) 130)
 
     (.setSize renderer width height)
-    (.appendChild el (.-domElement renderer) )
+    (.appendChild el (.-domElement renderer))
 
     (doseq [pos positions]
       (add-block! scene pos))
@@ -127,6 +85,69 @@
 
     (set! (.-y (.-position camera)) 10)
     (set! (.-z (.-position camera)) 10)
-    (.lookAt camera (js/THREE.Vector3. 0 0 0))
+    (.lookAt camera (js/THREE.Vector3. 0 0 0)))
 
+  IRender
+  (render [this]
+    (if-let [events (swap-and-return! events [])]
+      (let [keys (swap! keys (fn [keys] (events/events->keys keys events)))]
+
+        ;; add new blocks
+
+        (doseq [pos (swap-and-return! new-positions [])]
+          (add-block! scene pos))
+
+        (when-let [last @last-intersect]
+          (.. (:object last) -material -color (setHex (:color last))))
+
+        (reset! last-intersect nil)
+
+        (.setFromCamera raycaster mouse camera)
+
+        (let [intersects (.intersectObjects raycaster (.-children scene))]
+          (when-let [intersect (first intersects)]
+            (reset! last-intersect {:object (.. intersect -object)
+                                    :color (.. intersect -object -material -color getHex)
+                                    :normal (threed->vec (.. intersect -face -normal))})
+
+            (.. intersect -object -material -color (setHex 0xff0000))))
+
+        (update-camera keys camera light (.. clock (getElapsedTime)))
+
+        ;; TODO too many parameters
+        (events/call-event-handlers events scene @last-intersect mouse renderer camera)
+
+        (.render renderer scene camera)))))
+
+(defn render-context [el positions events]
+  (let [width (.-innerWidth js/window)
+        height (.-innerHeight js/window)]
+    (map->RenderContext
+     {:el el
+      :positions positions
+      :events events
+
+      :scene (reset! scene (js/THREE.Scene.))
+      :width width
+      :height height
+      :camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000 )
+      :renderer (js/THREE.WebGLRenderer.)
+      :geometry (js/THREE.BoxGeometry. 1 1 1)
+      :texture (js/THREE.ImageUtils.loadTexture "textures/grid.png")
+      :raycaster (js/THREE.Raycaster.)
+      :light (js/THREE.PointLight. 0xffffff)
+      :clock (js/THREE.Clock.)
+      :last-intersect (atom nil)
+      :mouse (js/THREE.Vector2.)
+      :keys (atom #{})})))
+
+(defn start-renderer [el positions events]
+  (reset! current-positions positions)
+
+  (let [context (render-context el positions events)
+        do-render (fn cb []
+                    (js/requestAnimationFrame cb)
+                    (render context))]
+
+    (initialise! context)
     (do-render)))
