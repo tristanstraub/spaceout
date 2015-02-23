@@ -8,7 +8,7 @@
             [om-sync.util :refer [edn-xhr]]
             [threed.ui.events :refer [get-events]]
             [threed.api :refer [<get-positions events->positions start-api-queue!]]
-            [threed.renderer :refer [start-renderer update-positions!]]
+            [threed.renderer :refer [attach-renderer update-positions!]]
             ))
 
 
@@ -63,7 +63,7 @@
                   (did-mount [this]
                     (start-sending!)
 
-                    (start-renderer (om/get-node owner) positions ui-events)
+                    (attach-renderer (om/get-node owner) positions ui-events)
                     )
                   om/IRender
                   (render [_]

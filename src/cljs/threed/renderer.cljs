@@ -16,9 +16,6 @@
             [threed.events :as events :refer [on-mouse-move on-mouse-down on-resize]]
             [threed.world :as world]))
 
-;; Current scene
-(defonce scene (atom nil))
-
 ;; Current grid locations that are set
 (defonce current-positions (atom []))
 
@@ -51,19 +48,27 @@
 (defprotocol IRender
   (render [this]))
 
-(defrecord RenderContext [positions events
+(defprotocol IIntersections
+  (intersections [this mouse camera]))
+
+(defrecord Intersector [raycaster]
+  IIntersections
+  (intersections [this mouse camera]
+    (.setFromCamera raycaster mouse camera)))
+
+(defn intersector []
+  (map->Intersector {:raycaster (js/THREE.Raycaster.)}))
+
+(defrecord RenderContext [positions
+                          events
                           width height
                           scene camera renderer
-                          geometry texture
-                          raycaster light clock
+                          intersector
+                          light clock
                           last-intersect
                           mouse keys]
   IInitialise
   (initialise! [this]
-    (set! (.. texture -wrapS) js/THREE.RepeatWrapping)
-    (set! (.. texture -wrapT) js/THREE.RepeatWrapping)
-    (.. texture -repeat (set 2 2))
-
     (.setClearColor renderer 0xdbf1ff 1)
     (set! (.. light -position -x) 10)
     (set! (.. light -position -y) 50)
@@ -101,9 +106,9 @@
 
         (reset! last-intersect nil)
 
-        (.setFromCamera raycaster mouse camera)
+        (intersections intersector mouse camera)
 
-        (let [intersects (.intersectObjects raycaster (.-children scene))]
+        (let [intersects (.intersectObjects (:raycaster intersector) (.-children scene))]
           (when-let [intersect (first intersects)]
             (reset! last-intersect {:object (.. intersect -object)
                                     :color (.. intersect -object -material -color getHex)
@@ -125,21 +130,26 @@
      {:positions positions
       :events events
 
-      :scene (reset! scene (js/THREE.Scene.))
+      ;; Dimensions
       :width width
       :height height
+
+      ;; Scene/View
       :camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000 )
-      :renderer (js/THREE.WebGLRenderer.)
-      :geometry (js/THREE.BoxGeometry. 1 1 1)
-      :texture (js/THREE.ImageUtils.loadTexture "textures/grid.png")
-      :raycaster (js/THREE.Raycaster.)
-      :light (js/THREE.PointLight. 0xffffff)
+      :scene (js/THREE.Scene.)
+
+      ;; Time
       :clock (js/THREE.Clock.)
+
+      :renderer (js/THREE.WebGLRenderer.)
+      :intersector (intersector)
+      :light (js/THREE.PointLight. 0xffffff)
+
       :last-intersect (atom nil)
       :mouse (js/THREE.Vector2.)
       :keys (atom #{})})))
 
-(defn start-renderer [el positions events]
+(defn attach-renderer [el positions events]
   (reset! current-positions positions)
 
   (let [context (render-context positions events)
