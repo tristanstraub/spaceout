@@ -12,7 +12,8 @@
             [threed.interop :refer [threed->vec set-threed-vec!]]
             [threed.camera :refer [update-camera]]
             [threed.threejs.blocks :as blocks :refer [make-block]]
-            [threed.events :refer [on-mouse-move on-mouse-down on-resize]]
+            [threed.threejs.intersection :refer [get-intersections]]
+            [threed.events :as events :refer [on-mouse-move on-mouse-down on-resize]]
             [threed.world :as world]))
 
 ;; Current scene
@@ -65,35 +66,21 @@
 
         keys (atom #{})
 
-        render (fn cb []
-                 (js/requestAnimationFrame cb)
+        render (fn []
                  (if-let [events (swap-and-return! events [])]
-                   (let [keys (swap! keys (fn [keys]
-                                            (reduce (fn [keys event]
-                                                      (cond (and (= (:event/type event) :keyboard)
-                                                                 (= (:event/action event) :down))
-                                                            (conj keys (.-which (:event/object event)))
-
-                                                            (and (= (:event/type event) :keyboard)
-                                                                 (= (:event/action event) :up))
-                                                            (disj keys (.-which (:event/object event)))
-
-                                                            :else
-                                                            keys))
-                                                    keys
-                                                    events)))]
+                   (let [keys (swap! keys (fn [keys] (events/events->keys keys events)))]
 
                      ;; add new blocks
 
                      (doseq [pos (swap-and-return! new-positions [])]
                        (add-block! scene pos))
 
-                     (.setFromCamera raycaster mouse camera)
-
                      (when-let [last @last-intersect]
                        (.. (:object last) -material -color (setHex (:color last))))
 
                      (reset! last-intersect nil)
+
+                     (.setFromCamera raycaster mouse camera)
 
                      (let [intersects (.intersectObjects raycaster (.-children scene))]
                        (when-let [intersect (first intersects)]
@@ -105,21 +92,15 @@
 
                      (update-camera keys camera light (.. clock (getElapsedTime)))
 
+                     ;; TODO too many parameters
+                     (events/call-event-handlers events scene @last-intersect mouse renderer camera)
 
-                     (doseq [event events]
-                       (cond (and (= (:event/type event) :mouse)
-                                  (= (:event/action event) :down))
-                             (on-mouse-down (:event/object event) scene @last-intersect)
 
-                             (and (= (:event/type event) :mouse)
-                                  (= (:event/action event) :move))
-                             (on-mouse-move (:event/object event) mouse)
 
-                             (and (= (:event/type event) :window)
-                                  (= (:event/action event) :resize))
-                             (on-resize (:event/object event) renderer camera)))
-
-                     (.render renderer scene camera))))]
+                     (.render renderer scene camera))))
+        do-render (fn cb []
+                         (js/requestAnimationFrame cb)
+                         (render))]
 
     (set! (.. texture -wrapS) js/THREE.RepeatWrapping)
     (set! (.. texture -wrapT) js/THREE.RepeatWrapping)
@@ -148,4 +129,4 @@
     (set! (.-z (.-position camera)) 10)
     (.lookAt camera (js/THREE.Vector3. 0 0 0))
 
-    (render)))
+    (do-render)))

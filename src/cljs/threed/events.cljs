@@ -1,4 +1,5 @@
-(ns threed.events)
+(ns threed.events
+  (:require [threed.api :refer [send-position!]]))
 
 ;; UI Event Handlers
 
@@ -21,3 +22,32 @@
           pos (if (and n v) (mapv + n v))]
       (when pos
         (send-position! pos)))))
+
+(defn events->keys [keys events]
+  (reduce (fn [keys event]
+            (cond (and (= (:event/type event) :keyboard)
+                       (= (:event/action event) :down))
+                  (conj keys (.-which (:event/object event)))
+
+                  (and (= (:event/type event) :keyboard)
+                       (= (:event/action event) :up))
+                  (disj keys (.-which (:event/object event)))
+
+                  :else
+                  keys))
+          keys
+          events))
+
+(defn call-event-handlers [events scene last-intersect mouse renderer camera]
+  (doseq [event events]
+    (cond (and (= (:event/type event) :mouse)
+               (= (:event/action event) :down))
+          (on-mouse-down (:event/object event) scene last-intersect)
+
+          (and (= (:event/type event) :mouse)
+               (= (:event/action event) :move))
+          (on-mouse-move (:event/object event) mouse)
+
+          (and (= (:event/type event) :window)
+               (= (:event/action event) :resize))
+          (on-resize (:event/object event) renderer camera))))
