@@ -94,6 +94,7 @@
     (.add scene light)
 
     ;; TODO factor this out into a vector which tracks camera position state
+    (set! (.-x (.-position camera)) 10)
     (set! (.-y (.-position camera)) 10)
     (set! (.-z (.-position camera)) 10)
     (.lookAt camera (js/THREE.Vector3. 0 0 0)))
@@ -126,6 +127,8 @@
 
         (.render renderer scene camera)))))
 
+(defonce webglrenderer (atom nil))
+
 (defn render-context [events]
   (let [width (.-innerWidth js/window)
         height (.-innerHeight js/window)]
@@ -138,7 +141,7 @@
       :height height
 
       ;; Canvas
-      :renderer (js/THREE.WebGLRenderer.)
+      :renderer (swap! webglrenderer #(or % (js/THREE.WebGLRenderer.)))
 
       ;; Scene/View
       :camera (js/THREE.PerspectiveCamera. 75 (/ width height) 0.1 1000 )
@@ -156,8 +159,8 @@
       ;; Keys interactions
       :keys (atom #{})})))
 
-(defn attach-renderer [el positions events]
-  (reset! current-positions positions)
+(defn attach-renderer [el universe events]
+  (reset! current-positions (:positions universe))
 
   (let [context (render-context events)
         do-render (fn cb []
@@ -166,5 +169,5 @@
 
     (.appendChild el (.-domElement (:renderer context)))
 
-    (initialise! context positions)
+    (initialise! context (:positions universe))
     (do-render)))

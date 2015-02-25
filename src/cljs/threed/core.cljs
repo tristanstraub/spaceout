@@ -1,6 +1,7 @@
 (ns threed.core
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :refer [put! chan <!]]
+            [quile.component :as component]
             [om.core :as om :include-macros true]
             [io.allthethings.atoms :refer [swap-and-return!]]
             ;;[om.dom :as dom :include-macros true]
@@ -9,9 +10,10 @@
             [threed.ui.events :refer [get-events]]
             [threed.api :refer [<get-positions events->positions start-api-queue!]]
             [threed.renderer :refer [attach-renderer update-positions!]]
-            ))
-
-
+            ;;[threed.universe :refer [create-universe]]
+            [threed.system :refer [system]]
+            [threed.system-bus :refer [subscribe! send-message!]]
+            [threed.dispatcher :refer [dispatch!]]))
 
 ;; NOTE: margins on page must be zero for picking to work
 ;; each mesh must have it's own material for picking to work
@@ -48,25 +50,39 @@
             (let [events (cljs.reader/read-string (.-data e))]
               (update-positions! (events->positions events)))))))
 
+;; (defn main []
+;;   (start-api-queue!)
+
+;;   (println "start")
+;;   (let [ui-events (get-events)]
+;;     (go (let [positions (<! (<get-positions))
+;;               universe (create-universe positions)
+;;               ]
+
+;;           (om/root
+;;               (fn [app owner]
+;;                 (reify
+;;                   om/IDidMount
+;;                   (did-mount [this]
+;;                     (start-sending!)
+;;                     (attach-renderer (om/get-node owner) universe ui-events))
+;;                   om/IRender
+;;                   (render [_]
+;;                     (html [:div]))))
+;;               app-state
+;;               {:target (. js/document (getElementById "app"))})))))
 
 (defn main []
-  (start-api-queue!)
-
-  (println "start")
-  (let [ui-events (get-events)]
-    (go (let [positions (<! (<get-positions))]
-
-          (om/root
-              (fn [app owner]
-                (reify
-                  om/IDidMount
-                  (did-mount [this]
-                    (start-sending!)
-
-                    (attach-renderer (om/get-node owner) positions ui-events)
-                    )
-                  om/IRender
-                  (render [_]
-                    (html [:div]))))
-              app-state
-              {:target (. js/document (getElementById "app"))})))))
+  (let [{:keys [system-bus]} (component/start (system))]
+    (om/root
+        (fn [app owner]
+          (reify
+            om/IDidMount
+            (did-mount [this]
+              (send-message! system-bus {:type :test :message "test!"}))
+            om/IRender
+            (render [_]
+              (html [:div "Test"]))))
+        app-state
+        {:target (. js/document (getElementById "app"))}))
+)

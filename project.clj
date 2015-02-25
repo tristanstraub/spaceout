@@ -14,6 +14,7 @@
                  [compojure "1.3.1"]
                  [com.cemerick/piggieback "0.1.5"]
 
+                 [midje "1.6.3"]
 
                  [compojure "1.2.0"]
                  [enlive "1.1.5"]
@@ -39,12 +40,16 @@
                  [weasel "0.6.0-SNAPSHOT"]
 
                  [ring.middleware.logger "0.5.0"]
+                 [quile/component-cljs "0.2.2"]
+
                  ]
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-environ "1.0.0"]
             [lein-figwheel "0.1.4-SNAPSHOT"]
             [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]]
+
+  :test-paths ["test/clj"]
 
   :min-lein-version "2.5.0"
 

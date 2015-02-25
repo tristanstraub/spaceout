@@ -1,5 +1,6 @@
 (ns threed.server
   (:require [clojure.java.io :as io]
+            [quile.component :as component]
             [threed.dev :refer [is-dev? inject-devmode-html browser-repl start-figwheel]]
             [compojure.core :refer [GET POST defroutes]]
             [compojure.route :refer [resources]]
@@ -16,7 +17,10 @@
             [org.httpkit.server :as http-kit]
             [threed.comms :as comms]
             [compojure.handler :refer [site] :as handler]
-            [ring.middleware.logger :as logger]))
+            [ring.middleware.logger :as logger]
+
+            [threed.system :refer [system]]
+            [threed.system-bus :refer [send-message!]]))
 
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
@@ -30,10 +34,10 @@
 
 (defroutes routes
   (resources "/")
-  ;;(resources "/react" {:root "react"})
 
   (GET "/ws" [] comms/ws)
 
+  ;; TODO remove /events -- use system-bus
   (wrap-restful-response (GET "/events" [] {:body {:events @events}}) :formats [:edn])
 
   ;;wrap-json-body
@@ -46,22 +50,16 @@
 
 (def http-handler
   (let [ring-defaults-config api-defaults
-
+        ;; TODO csrf
         ;; (assoc-in api-defaults [:security :anti-forgery]
         ;;           {:read-token (fn [req] (-> req :params :csrf-token))})
         ]
-    ;; NB: Sente requires the Ring `wrap-params` + `wrap-keyword-params`
-    ;; middleware to work. These are included with
-    ;; `ring.middleware.defaults/wrap-defaults` - but you'll need to ensure
-    ;; that they're included yourself if you're not using `wrap-defaults`.
-    ;;
     (-> (if is-dev?
           (reload/wrap-reload (wrap-defaults #'routes ring-defaults-config))
           (wrap-defaults routes ring-defaults-config))
         (wrap-edn-params)
-        (logger/wrap-with-logger))))
-
-
+        (logger/wrap-with-logger)
+        )))
 
 (defn run-web-server [& [port]]
   (let [port (Integer. (or port (env :port) 3000))]
@@ -77,7 +75,13 @@
     (run-auto-reload))
   (run-web-server port))
 
+(defonce sys (atom nil))
+
 (defn -main [& [port]]
-  (add-watch events :key (fn [k r os events]
-                           (comms/send-events! events)))
-  (run port))
+  (let [{:keys [system-bus]} (reset! sys (component/start (system)))]
+    ;; TODO remove this
+    (add-watch events :key (fn [k r os events]
+                             ;; TODO pipe over system-bus
+                             (comms/send-events! events)))
+
+    (run port)))
