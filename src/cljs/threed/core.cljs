@@ -73,7 +73,11 @@
 ;;               {:target (. js/document (getElementById "app"))})))))
 
 (defn main []
-  (let [{:keys [system-bus]} (component/start (system))]
+  (let [{:keys [system-bus dispatcher]} (component/start (system))]
+    (add-watch (:universe dispatcher)
+               :key (fn [key reference old-universe universe]
+                      (swap! app-state #(assoc % :positions (:positions universe)))))
+
     (om/root
         (fn [app owner]
           (reify
@@ -82,7 +86,6 @@
               (send-message! system-bus {:type :test :message "test!"}))
             om/IRender
             (render [_]
-              (html [:div "Test"]))))
+              (html [:div (pr-str (:positions app))]))))
         app-state
-        {:target (. js/document (getElementById "app"))}))
-)
+        {:target (. js/document (getElementById "app"))})))
