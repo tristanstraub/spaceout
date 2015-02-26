@@ -1,6 +1,8 @@
 (ns threed.events
   (:require [threed.api :refer [send-position!]]
-            [threed.threejs.blocks :as blocks]))
+            [threed.threejs.blocks :as blocks]
+            [threed.actions :refer [add-block]]
+            [threed.dispatcher :refer [dispatch!]]))
 
 ;; UI Event Handlers
 
@@ -16,14 +18,18 @@
     (set! (.. camera -aspect) (/ w h))
     (.. camera (updateProjectionMatrix))))
 
-(defn- on-mouse-down [event scene intersection]
+;; TODO convert mouse handlers into a system/component with dispatcher as dependency
+(defn- on-mouse-down [event dispatcher scene intersection]
   (when intersection
     (let [n (:normal intersection)
           v (.. (:object intersection) -meta)
           pos (if (and n v) (mapv + n v))]
       (when pos
         ;; TODO convert to actions which are dispatched to modify the universe
-        (send-position! pos)))))
+        ;;(send-position! pos)
+
+        (dispatch! dispatcher (add-block pos))
+        ))))
 
 (defn events->keys [keys events]
   (reduce (fn [keys event]
@@ -40,11 +46,11 @@
           keys
           events))
 
-(defn call-event-handlers [events scene last-intersect mouse renderer camera]
+(defn call-event-handlers [events dispatcher scene last-intersect mouse renderer camera]
   (doseq [event events]
     (cond (and (= (:event/type event) :mouse)
                (= (:event/action event) :down))
-          (on-mouse-down (:event/object event) scene last-intersect)
+          (on-mouse-down (:event/object event) dispatcher scene last-intersect)
 
           (and (= (:event/type event) :mouse)
                (= (:event/action event) :move))

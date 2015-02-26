@@ -8,3 +8,14 @@
 (defn add-block [pos]
   (assoc (action :add-block)
     :position pos))
+
+(defn send-blocks [positions]
+  (assoc (action :send-blocks)
+    :positions positions))
+
+(defn request-universe []
+  (assoc (action :request-universe)))
+
+(defn the-universe [positions]
+  (assoc (action :the-universe)
+    :positions positions))

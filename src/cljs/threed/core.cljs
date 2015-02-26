@@ -83,6 +83,9 @@
                :key (fn [key reference old-universe universe]
                       (swap! app-state #(assoc % :positions (:positions universe)))))
 
+
+    (send-message! system-bus (actions/request-universe))
+
     (let [ui-events (get-events)]
       (om/root
           (fn [app owner]
@@ -91,7 +94,8 @@
               (did-mount [this]
                 (attach-renderer (om/get-node owner)
                                  (:universe dispatcher)
-                                 ui-events)
+                                 ui-events
+                                 dispatcher)
                 ;;(send-message! system-bus (actions/add-block [0 0 1]))
                 )
               om/IRender

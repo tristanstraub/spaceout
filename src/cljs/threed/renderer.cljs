@@ -13,8 +13,10 @@
             [threed.camera :refer [update-camera!]]
             [threed.threejs.blocks :as blocks :refer [make-block]]
             [threed.threejs.intersection :refer [get-intersections]]
-            [threed.events :as events :refer [on-mouse-move on-mouse-down on-resize]]
-            [threed.world :as world]))
+            [threed.world :as world]
+            [threed.events :as events]
+            [threed.dispatcher :refer [dispatch!]]
+            [threed.actions :refer [send-blocks]]))
 
 ;; Current grid locations that are set
 (defonce current-positions (atom []))
@@ -70,7 +72,7 @@
 (defn intersector []
   (map->Intersector {:raycaster (js/THREE.Raycaster.)}))
 
-(defrecord RenderContext [events
+(defrecord RenderContext [events dispatcher
                           width height
                           scene camera renderer
                           intersector
@@ -125,17 +127,18 @@
         (update-camera! keys camera light (.. clock (getElapsedTime)))
 
         ;; TODO too many parameters -- and who knows what this modifies
-        (events/call-event-handlers events scene @last-intersect mouse renderer camera)
+        (events/call-event-handlers events dispatcher scene @last-intersect mouse renderer camera)
 
         (.render renderer scene camera)))))
 
 (defonce webglrenderer (atom nil))
 
-(defn render-context [events]
+(defn render-context [events dispatcher]
   (let [width (.-innerWidth js/window)
         height (.-innerHeight js/window)]
     (map->RenderContext
-     {;; Communications
+     {:dispatcher dispatcher
+      ;; Communications
       :events events
 
       ;; Dimensions
@@ -161,18 +164,22 @@
       ;; Keys interactions
       :keys (atom #{})})))
 
-(defn attach-renderer [el universe events]
+(defn attach-renderer [el universe events dispatcher]
   ;; pre: universe is an atom
   (reset! current-positions (:positions universe))
 
-  (let [context (render-context events)
+  (let [context (render-context events dispatcher)
         do-render (fn cb []
+                    ;; TODO reenable
                     (js/requestAnimationFrame cb)
                     (render context))]
 
     (add-watch universe :renderer
                (fn [key reference old-universe new-universe]
-                 ;; TODO not sure about this
+                 (println "u1:u2" new-universe old-universe)
+                 (dispatch! dispatcher (send-blocks (clojure.set/difference
+                                                                 (:positions new-universe)
+                                                                 (:positions old-universe))))
                  (update-positions! (:positions new-universe))))
 
     (.appendChild el (.-domElement (:renderer context)))

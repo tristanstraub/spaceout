@@ -13,7 +13,8 @@
             #+cljs
             [cljs.core.async :refer [put! chan <!]]
             #+clj
-            [threed.comms :as comms]))
+            [threed.comms :as comms]
+            [threed.message]))
 
 (declare <get-messages -send-message!)
 
@@ -45,6 +46,7 @@
 
   ISendMessage
   (send-message! [this message]
+    (println "send message" message)
     (-send-message! message))
 
   ISubscribe
@@ -85,6 +87,8 @@
 
     (set! (.-onerror websocket) (fn [] (.error js/console "ws error" js/arguments)))
     (set! (.-onmessage websocket) (fn [e]
+                                    (cljs.reader/register-tag-parser! "threed.message.Message" #'threed.message/read-message)
+
                                     (let [message (cljs.reader/read-string (.-data e))]
                                       (println "on-message" message)
                                       (put! channel message))))
