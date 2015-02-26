@@ -25,7 +25,9 @@
 
 (defn update-positions! [positions]
   (reset! new-positions (clojure.set/difference positions @current-positions))
-  (reset! current-positions positions))
+  (reset! current-positions positions)
+
+  (println "update-positions!" positions))
 
 (defn add-block!
   [scene pos]
@@ -160,12 +162,18 @@
       :keys (atom #{})})))
 
 (defn attach-renderer [el universe events]
+  ;; pre: universe is an atom
   (reset! current-positions (:positions universe))
 
   (let [context (render-context events)
         do-render (fn cb []
                     (js/requestAnimationFrame cb)
                     (render context))]
+
+    (add-watch universe :renderer
+               (fn [key reference old-universe new-universe]
+                 ;; TODO not sure about this
+                 (update-positions! (:positions new-universe))))
 
     (.appendChild el (.-domElement (:renderer context)))
 

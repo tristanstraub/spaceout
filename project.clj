@@ -69,6 +69,8 @@
                    :output-path "target/generated/cljs"
                    :rules :cljs}]}
 
+  :prep-tasks [["cljx" "once"] "javac" "compile"]
+
   :profiles {;;:default []
 
              :dev {:repl-options {:init-ns threed.server

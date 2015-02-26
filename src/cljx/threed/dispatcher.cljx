@@ -20,24 +20,27 @@
 
 (defn dispatch-actions! [dispatcher system-bus]
   (let [messages (subscribe! system-bus {:type :action})]
+    (println "starting dispatcher loop")
     (go (loop []
           (let [action (<! messages)]
             (println "action from messages:" dispatcher action)
             (dispatch! dispatcher action))
           (recur)))))
 
+;; TODO does universe belong in dispatcher? as an atom?
 (defrecord Dispatcher [clients system-bus universe]
   component/Lifecycle
   (start [this]
+    (println "start dispatcher")
     ;; The universe can evolve
     (let [component (assoc this :universe (atom (create-universe)))]
+      (println "dispatch actions!")
       (dispatch-actions! component system-bus)
 
       component))
 
   IDispatch
   (dispatch! [this action]
-    (println "dispatcher" component)
     (println "dispatch:" (:name action) action)
     (case (:name action)
       ;; Add a new block to the universe

@@ -13,7 +13,9 @@
             ;;[threed.universe :refer [create-universe]]
             [threed.system :refer [system]]
             [threed.system-bus :refer [subscribe! send-message!]]
-            [threed.dispatcher :refer [dispatch!]]))
+            [threed.dispatcher :refer [dispatch!]]
+            [threed.actions :as actions]))
+
 
 ;; NOTE: margins on page must be zero for picking to work
 ;; each mesh must have it's own material for picking to work
@@ -72,20 +74,28 @@
 ;;               app-state
 ;;               {:target (. js/document (getElementById "app"))})))))
 
+
+(defonce sys (atom nil))
+
 (defn main []
-  (let [{:keys [system-bus dispatcher]} (component/start (system))]
+  (let [{:keys [system-bus dispatcher]} (reset! sys (component/start (system)))]
     (add-watch (:universe dispatcher)
                :key (fn [key reference old-universe universe]
                       (swap! app-state #(assoc % :positions (:positions universe)))))
 
-    (om/root
-        (fn [app owner]
-          (reify
-            om/IDidMount
-            (did-mount [this]
-              (send-message! system-bus {:type :test :message "test!"}))
-            om/IRender
-            (render [_]
-              (html [:div (pr-str (:positions app))]))))
-        app-state
-        {:target (. js/document (getElementById "app"))})))
+    (let [ui-events (get-events)]
+      (om/root
+          (fn [app owner]
+            (reify
+              om/IDidMount
+              (did-mount [this]
+                (attach-renderer (om/get-node owner)
+                                 (:universe dispatcher)
+                                 ui-events)
+                ;;(send-message! system-bus (actions/add-block [0 0 1]))
+                )
+              om/IRender
+              (render [_]
+                (html [:div #_(pr-str (:positions app))]))))
+          app-state
+          {:target (. js/document (getElementById "app"))}))))

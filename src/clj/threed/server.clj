@@ -20,7 +20,11 @@
             [ring.middleware.logger :as logger]
 
             [threed.system :refer [system]]
-            [threed.system-bus :refer [send-message!]]))
+            [threed.system-bus :refer [send-message!]]
+            [threed.message :as message]))
+
+(assoc *data-readers*
+  :threed.message.Message #'message/message)
 
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
@@ -47,7 +51,7 @@
           (reload/wrap-reload (wrap-defaults #'routes ring-defaults-config))
           (wrap-defaults routes ring-defaults-config))
         (wrap-edn-params)
-        (logger/wrap-with-logger)
+        ;;(logger/wrap-with-logger)
         )))
 
 (defn run-web-server [& [port]]
@@ -59,18 +63,13 @@
   (auto-reload *ns*)
   (start-figwheel))
 
+(defonce sys (atom nil))
+
 (defn run [& [port]]
+  (reset! sys (component/start (system)))
   (when is-dev?
     (run-auto-reload))
   (run-web-server port))
 
-(defonce sys (atom nil))
-
 (defn -main [& [port]]
-  (let [{:keys [system-bus]} (reset! sys (component/start (system)))]
-    ;; TODO remove this
-    (add-watch events :key (fn [k r os events]
-                             ;; TODO pipe over system-bus
-                             (comms/send-events! events)))
-
-    (run port)))
+  (run port))

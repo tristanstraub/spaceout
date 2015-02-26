@@ -1,9 +1,9 @@
-(ns threed.actions)
-
-(defrecord Action [name])
+(ns threed.actions
+  (:require [threed.message :refer [message]]))
 
 (defn action [name]
-  (Action. name))
+  (assoc (message :type :action)
+    :name name))
 
 (defn add-block [pos]
   (assoc (action :add-block)

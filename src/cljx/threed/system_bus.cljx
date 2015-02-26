@@ -3,6 +3,13 @@
   (:require-macros [cljs.core.async.macros :refer [go]])
 
   (:require [quile.component :as component]
+
+            #+clj
+            [clojure.core.async
+             :as a
+             :refer [put! >! <! >!! <!! go chan buffer close! thread
+                     alts! alts!! timeout]]
+
             #+cljs
             [cljs.core.async :refer [put! chan <!]]
             #+clj

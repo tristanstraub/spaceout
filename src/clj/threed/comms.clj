@@ -11,7 +11,8 @@
             [compojure.handler :refer [site] :as handler]
             [ring.middleware.reload :as reload]
             [cheshire.core :refer :all]
-            [clojure.edn :as edn]))
+            [clojure.tools.reader.edn :as edn]
+            [threed.message]))
 
 ;; TODO rename comms to websockets
 
@@ -19,11 +20,6 @@
 
 (defn mesg-received [msg]
   (println "received" msg))
-
-(defn send-events! [events]
-  (println "send-events! to clients" @clients)
-  (doseq [client @clients]
-    (send! (key client) (pr-str events))))
 
 (defn send-message! [message]
   (doseq [client @clients]
@@ -40,7 +36,8 @@
     (println con " connected")
     (on-receive con (fn [msg]
                       (println "server got message:" msg)
-                      (put! messages (edn/read-string msg))))
+                      (put! messages
+                            (edn/read-string {:readers {'threed.message.Message #'threed.message/read-message}} msg))))
 
     (on-close con (fn [status]
                     (swap! clients dissoc con)
