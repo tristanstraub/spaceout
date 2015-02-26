@@ -30,21 +30,10 @@
    :headers {"Content-Type" "application/edn"}
    :body (pr-str data)})
 
-(defonce events (atom []))
-
 (defroutes routes
   (resources "/")
 
   (GET "/ws" [] comms/ws)
-
-  ;; TODO remove /events -- use system-bus
-  (wrap-restful-response (GET "/events" [] {:body {:events @events}}) :formats [:edn])
-
-  ;;wrap-json-body
-  (POST "/events" {params :params}
-        (do (swap! events concat (:events params))
-            ;;(comms/send-events! @events)
-            {:status 200 :body "OK"}))
 
   (GET "/*" req (page)))
 
