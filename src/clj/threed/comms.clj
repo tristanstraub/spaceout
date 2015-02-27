@@ -16,14 +16,17 @@
 
 ;; TODO rename comms to websockets
 
-(def clients (atom {}))
+(defonce clients (atom {}))
 
 (defn mesg-received [msg]
   (println "received" msg))
 
 (defn send-message! [message]
-  (doseq [client @clients]
-    (send! (key client) (pr-str message))))
+  (let [encoded (binding [*print-length* false] (pr-str message))]
+    (doseq [client @clients]
+      ;; TODO encoding independence
+      (println "sending to client" (key client) encoded)
+      (send! (key client) encoded))))
 
 (defonce messages (chan))
 

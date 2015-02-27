@@ -12,7 +12,7 @@
             #+cljs
             [cljs.core.async :refer [put! chan <!]]
 
-            [threed.universe :refer (create-universe)]
+            [threed.universe :refer [add-positions set-positions add-position]]
             [threed.system-bus :refer [subscribe! send-message!]]
             [threed.actions :refer [the-universe]]))
 
@@ -22,6 +22,7 @@
 (defn remote->local [action]
   (case (:name action)
     :send-blocks (assoc action :name :add-blocks)
+    #+clj :request-universe #+clj (assoc action :name :send-universe)
     action))
 
 (defn dispatch-actions! [dispatcher system-bus]
@@ -31,20 +32,16 @@
           (let [action (<! messages)]
 
             (println "action from messages:" dispatcher action)
+            ;; remove->local should get translated outside of dispatch-actions!
             (dispatch! dispatcher (remote->local action)))
           (recur)))))
 
 ;; TODO does universe belong in dispatcher? as an atom?
-(defrecord Dispatcher [clients system-bus universe]
+(defrecord Dispatcher [clients system-bus state]
   component/Lifecycle
   (start [this]
-    (println "start dispatcher")
-    ;; The universe can evolve
-    (let [component (assoc this :universe (atom (create-universe)))]
-      (println "dispatch actions!")
-      (dispatch-actions! component system-bus)
-
-      component))
+    (dispatch-actions! this system-bus)
+    this)
 
   ;; TODO outsource action handling
   IDispatch
@@ -56,40 +53,40 @@
       (do
         (println "add-block?" (:position action))
 
-        (swap! universe
+        (swap! (:universe state)
                (fn [universe]
-                 (update-in universe [:positions] #(conj % (:position action)))))
+                 (add-position universe (:position action))))
 
-        (println "new universe" @universe))
+        (println "new universe" @(:universe state)))
 
       :send-blocks
       (do
         (println "send-blocks?")
-        (send-message! system-bus action))
+        (when (not (empty? (:positions action)))
+          (send-message! system-bus action)))
 
       :add-blocks
       (do
         (println "adding blocks")
-        (swap! universe
+        (swap! (:universe state)
                (fn [universe]
-                 (update-in universe [:positions] #(apply conj % (:positions action)))))
-        (println :positions universe))
+                 (add-positions universe (:positions action)))))
 
       ;; server side send the-universe only
       #+clj
-      :request-universe
+      :send-universe
       #+clj
-      (send-message! system-bus (the-universe (:positions @universe)))
+      (send-message! system-bus (the-universe (:positions @(:universe state))))
 
       ;; client side replace only
       #+cljs
       :the-universe
       #+cljs
       (do
-        (println "it's the universe!" action)
-        (swap! universe
+        (println "it's the universe!" (:positions action))
+        (swap! (:universe state)
                (fn [universe]
-                 (assoc universe :positions (:positions action)))))
+                 (set-positions universe (:positions action)))))
 
       ;; :else
       (println (str "Unknown action name" (:name action))))))

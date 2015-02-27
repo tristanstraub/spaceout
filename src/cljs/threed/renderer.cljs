@@ -26,10 +26,12 @@
 (defonce new-positions (atom []))
 
 (defn update-positions! [positions]
-  (reset! new-positions (clojure.set/difference positions @current-positions))
-  (reset! current-positions positions)
+  (let [newest (clojure.set/difference positions @current-positions)]
+    (println "update-positions!" newest "from:" positions "and:" @current-positions)
+    (reset! new-positions newest)
+    (reset! current-positions positions)
 
-  (println "update-positions!" positions))
+    (println "update-positions!" positions)))
 
 (defn add-block!
   [scene pos]
@@ -112,9 +114,9 @@
         ;; TODO move this into a side-channel
         (let [newest (swap-and-return! new-positions [])]
           (when (not (empty? newest))
-            (println "newest" newest))
-          (doseq [pos newest]
-            (add-block! scene pos)))
+            (println "newest" newest)
+            (doseq [pos newest]
+              (add-block! scene pos))))
 
         ;; TODO move into intersector -- deal with side-effecting nature of intersector
         (when-let [last @last-intersect]
@@ -165,6 +167,7 @@
       :keys (atom #{})})))
 
 (defn attach-renderer [el universe events dispatcher]
+  (println "attach-renderer" universe)
   ;; pre: universe is an atom
   (reset! current-positions (:positions universe))
 
@@ -176,10 +179,10 @@
 
     (add-watch universe :renderer
                (fn [key reference old-universe new-universe]
-                 (println "u1:u2" new-universe old-universe)
-                 (dispatch! dispatcher (send-blocks (clojure.set/difference
-                                                                 (:positions new-universe)
-                                                                 (:positions old-universe))))
+                 (println "u1:u2" new-universe old-universe "or:" @universe)
+                 ;; (dispatch! dispatcher (send-blocks (clojure.set/difference
+                 ;;                                                 (:positions new-universe)
+                 ;;                                                 (:positions old-universe))))
                  (update-positions! (:positions new-universe))))
 
     (.appendChild el (.-domElement (:renderer context)))

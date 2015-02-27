@@ -32,6 +32,7 @@
 (defrecord SystemBus [subscriptions messages]
   component/Lifecycle
   (start [this]
+    (println "starting system bus")
     (let [subscriptions (atom [])
           messages (<get-messages)]
       (go (loop []
@@ -67,23 +68,36 @@
     (str schema "//" (.-host loc) (.-pathname loc) "ws")))
 
 #+cljs
-(defonce websocket (js/WebSocket. (get-ws-url)))
+(defn get-websocket []
+  (defonce websocket (atom nil))
+  (swap! websocket #(or % (js/WebSocket. (get-ws-url)))))
+
+#+cljs
+(defonce websocket-queue (chan))
 
 ;; TODO Needs a client end-point argument
 (defn -send-message! [message]
   #+cljs
-  (do (println "sending" message)
-    (.send websocket (pr-str message)))
+  (do
+    (println "queue message" message)
+    (put! websocket-queue message))
 
   #+clj
   (comms/send-message! message))
 
 #+cljs
 (defn- <get-messages []
-  (let [channel (chan)]
-
-    ;; (set! (.-onopen conn) (fn [e]
-    ;;                         (.send conn (.stringify js/JSON (js-obj "command" "getall")))))
+  (let [channel (chan)
+        websocket (get-websocket)]
+    (println "try connect websockets")
+    (set! (.-onopen websocket) (fn [e]
+                                 (println "websocket opened")
+                                 (go (loop []
+                                       (let [message (<! websocket-queue)]
+                                         (println "sending" message)
+                                         (.send websocket (binding [*print-length* false]
+                                                            (pr-str message))))
+                                       (recur)))))
 
     (set! (.-onerror websocket) (fn [] (.error js/console "ws error" js/arguments)))
     (set! (.-onmessage websocket) (fn [e]

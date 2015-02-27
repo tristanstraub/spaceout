@@ -23,22 +23,12 @@
             [threed.system-bus :refer [send-message!]]
             [threed.message :as message]))
 
-(assoc *data-readers*
-  :threed.message.Message #'message/message)
-
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
 
-(defn generate-response [data & [status]]
-  {:status (or status 200)
-   :headers {"Content-Type" "application/edn"}
-   :body (pr-str data)})
-
 (defroutes routes
   (resources "/")
-
   (GET "/ws" [] comms/ws)
-
   (GET "/*" req (page)))
 
 (def http-handler
@@ -63,13 +53,31 @@
   (auto-reload *ns*)
   (start-figwheel))
 
-(defonce sys (atom nil))
+(defn start-system! []
+  (defonce sys (atom (component/start (system)))))
+
+(defn stop-system! []
+  ;; TODO not owkring
+  (component/stop @sys))
 
 (defn run [& [port]]
-  (reset! sys (component/start (system)))
+  (defonce stop! (atom nil))
+
+  (swap! stop! (fn [stop!] (when stop! (stop!)) nil))
+
+  (start-system!)
+
   (when is-dev?
     (run-auto-reload))
-  (run-web-server port))
+
+  (let [stop-web-server! (run-web-server port)]
+    (reset! stop! (fn []
+                    (stop-web-server!)
+                    (stop-system!)))))
+
+;; reconnect dispatcher after reload
+;; (when @sys
+;;   (threed.dispatcher/dispatch-actions! (:dispatcher @sys) (:system-bus @sys)))
 
 (defn -main [& [port]]
   (run port))

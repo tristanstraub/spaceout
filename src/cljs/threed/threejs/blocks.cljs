@@ -1,8 +1,11 @@
 (ns threed.threejs.blocks)
 
 ;; Create a THREE.Mesh representing a cube at position [x y z]
-(defn make-block [[x y z]]
-  (let [ ;; Each cube needs its own material for picking to work
+(defn make-block [pos]
+  (println "make-block:pos" pos)
+  (let [[x y z] pos
+
+ ;; Each cube needs its own material for picking to work
         geometry (js/THREE.BoxGeometry. 1 1 1)
         material (js/THREE.MeshLambertMaterial. (clj->js {:color 0x48b4fb}))
         cube (js/THREE.Mesh. geometry material)]
@@ -16,4 +19,5 @@
 
 (defn add-block!
   [scene pos]
+  (println "add-block!" pos)
   (.add scene (make-block pos)))
