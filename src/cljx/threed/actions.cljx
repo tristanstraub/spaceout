@@ -14,7 +14,7 @@
     :positions positions))
 
 (defn request-universe []
-  (assoc (action :request-universe)))
+  (action :request-universe))
 
 (defn the-universe [positions]
   (assoc (action :the-universe)

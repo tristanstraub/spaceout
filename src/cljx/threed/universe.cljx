@@ -60,21 +60,16 @@
   (map->Universe {:positions #{}}))
 
 (defn add-position [universe position]
-  (println "add-position" position)
   (update-in universe [:positions]
              #(conj % position)))
 
 (defn add-positions [universe positions]
-  (println "add-positions" positions)
   (update-in universe [:positions]
              (fn [upos]
-               (println "upos" upos)
-               (println "positions" positions)
                (if (empty? positions)
                  upos
                  (apply conj upos positions)))))
 
 (defn set-positions [universe positions]
-  (println "set-positions" positions)
   (assoc universe :positions
          (apply hash-set positions)))

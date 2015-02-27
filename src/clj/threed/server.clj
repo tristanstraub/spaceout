@@ -73,7 +73,9 @@
   (let [stop-web-server! (run-web-server port)]
     (reset! stop! (fn []
                     (stop-web-server!)
-                    (stop-system!)))))
+                    (stop-system!))))
+
+  #_(swap! (get-in @sys [:state :universe]) (fn [universe] (threed.universe/add-position universe [0 0 0]))))
 
 ;; reconnect dispatcher after reload
 ;; (when @sys

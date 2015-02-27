@@ -3,12 +3,12 @@
             [threed.dispatcher :refer [dispatcher]]
             [threed.system-bus :refer [system-bus]]
             [threed.synchroniser :refer [synchroniser]]
-            [threed.universe :refer [create-universe]]))
+            [threed.universe :refer [create-universe add-position]]))
 
 (defn system []
   (component/system-map
              ;; TODO fix clients
-             :state {:universe (atom (create-universe))}
+             :state {:universe (atom (add-position (create-universe) [0 0 0]))}
              :clients []
              :system-bus (system-bus)
              :dispatcher (component/using (dispatcher) [:clients :system-bus :state])

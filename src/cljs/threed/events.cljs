@@ -1,6 +1,5 @@
 (ns threed.events
-  (:require [threed.api :refer [send-position!]]
-            [threed.threejs.blocks :as blocks]
+  (:require [threed.threejs.blocks :as blocks]
             [threed.actions :refer [add-block]]
             [threed.dispatcher :refer [dispatch!]]))
 
@@ -25,11 +24,7 @@
           v (.. (:object intersection) -meta)
           pos (if (and n v) (mapv + n v))]
       (when pos
-        ;; TODO convert to actions which are dispatched to modify the universe
-        ;;(send-position! pos)
-
-        (dispatch! dispatcher (add-block pos))
-        ))))
+        (dispatch! dispatcher (add-block pos))))))
 
 (defn events->keys [keys events]
   (reduce (fn [keys event]

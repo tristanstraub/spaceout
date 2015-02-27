@@ -19,5 +19,7 @@
 
 (defn add-block!
   [scene pos]
-  (println "add-block!" pos)
+  (when (not pos)
+
+    (println "add-block!" pos))
   (.add scene (make-block pos)))

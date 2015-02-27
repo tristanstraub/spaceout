@@ -14,7 +14,10 @@
             [cljs.core.async :refer [put! chan <!]]
             #+clj
             [threed.comms :as comms]
-            [threed.message]))
+            [threed.message]
+
+            #+cljs
+            [cljs.reader]))
 
 (declare <get-messages -send-message!)
 
@@ -37,17 +40,14 @@
           messages (<get-messages)]
       (go (loop []
             (let [message (<! messages)]
-              (println "systembus:message" message)
               (doseq [{:keys [topic subscription-channel]} @subscriptions]
                 (when (topic-matches? topic message)
-                  (println "putting to subscription" message)
                   (put! subscription-channel message)))
               (recur))))
       (assoc this :subscriptions subscriptions :messages messages)))
 
   ISendMessage
   (send-message! [this message]
-    (println "send message" message)
     (-send-message! message))
 
   ISubscribe
@@ -78,9 +78,7 @@
 ;; TODO Needs a client end-point argument
 (defn -send-message! [message]
   #+cljs
-  (do
-    (println "queue message" message)
-    (put! websocket-queue message))
+  (put! websocket-queue message)
 
   #+clj
   (comms/send-message! message))
@@ -89,12 +87,11 @@
 (defn- <get-messages []
   (let [channel (chan)
         websocket (get-websocket)]
-    (println "try connect websockets")
+
     (set! (.-onopen websocket) (fn [e]
                                  (println "websocket opened")
                                  (go (loop []
                                        (let [message (<! websocket-queue)]
-                                         (println "sending" message)
                                          (.send websocket (binding [*print-length* false]
                                                             (pr-str message))))
                                        (recur)))))
@@ -104,7 +101,6 @@
                                     (cljs.reader/register-tag-parser! "threed.message.Message" #'threed.message/read-message)
 
                                     (let [message (cljs.reader/read-string (.-data e))]
-                                      (println "on-message" message)
                                       (put! channel message))))
 
     channel))

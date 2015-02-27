@@ -8,10 +8,6 @@
                      alts! alts!! timeout]]
             #+cljs
             [cljs.core.async :refer [put! chan <!]]
-
-            ;; [threed.universe :refer [add-positions set-positions add-position]]
-            ;; [threed.system-bus :refer [subscribe! send-message!]]
-            ;; [threed.actions :refer [the-universe]]
             [threed.dispatcher :refer [dispatch!]]
             [threed.actions :refer [send-blocks]]))
 
@@ -20,7 +16,6 @@
   (start [this]
     (add-watch (:universe state) :synchroniser
                (fn [key reference old-universe new-universe]
-                 (println "synchroniser[u1:u2]" new-universe old-universe)
                  (let [new-positions (clojure.set/difference
                                                   (:positions new-universe)
                                                   (:positions old-universe))]

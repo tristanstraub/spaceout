@@ -30,8 +30,6 @@
     (println "starting dispatcher loop")
     (go (loop []
           (let [action (<! messages)]
-
-            (println "action from messages:" dispatcher action)
             ;; remove->local should get translated outside of dispatch-actions!
             (dispatch! dispatcher (remote->local action)))
           (recur)))))
@@ -50,27 +48,18 @@
     (case (:name action)
       ;; Add a new block to the universe
       :add-block
-      (do
-        (println "add-block?" (:position action))
-
-        (swap! (:universe state)
-               (fn [universe]
-                 (add-position universe (:position action))))
-
-        (println "new universe" @(:universe state)))
+      (swap! (:universe state)
+             (fn [universe]
+               (add-position universe (:position action))))
 
       :send-blocks
-      (do
-        (println "send-blocks?")
-        (when (not (empty? (:positions action)))
-          (send-message! system-bus action)))
+      (when (not (empty? (:positions action)))
+        (send-message! system-bus action))
 
       :add-blocks
-      (do
-        (println "adding blocks")
-        (swap! (:universe state)
-               (fn [universe]
-                 (add-positions universe (:positions action)))))
+      (swap! (:universe state)
+             (fn [universe]
+               (add-positions universe (:positions action))))
 
       ;; server side send the-universe only
       #+clj
@@ -82,11 +71,9 @@
       #+cljs
       :the-universe
       #+cljs
-      (do
-        (println "it's the universe!" (:positions action))
-        (swap! (:universe state)
-               (fn [universe]
-                 (set-positions universe (:positions action)))))
+      (swap! (:universe state)
+             (fn [universe]
+               (set-positions universe (:positions action))))
 
       ;; :else
       (println (str "Unknown action name" (:name action))))))
