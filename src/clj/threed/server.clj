@@ -63,6 +63,16 @@
   ;; TODO not owkring
   (component/stop @sys))
 
+(defn gen-world! [r]
+  (swap! (get-in @sys [:state :universe])
+         (fn [universe]
+           (uni/add-positions universe (gen/sphere [0 0 0] r)))))
+
+(defn empty-world! []
+  (swap! (get-in @sys [:state :universe])
+         (fn [universe]
+           (uni/clear universe))))
+
 (defn run [& [port]]
   (defonce stop! (atom nil))
 
@@ -78,21 +88,12 @@
                     (stop-web-server!)
                     (stop-system!))))
 
-  #_(swap! (get-in @sys [:state :universe]) (fn [universe] (threed.universe/add-position universe [0 0 0]))))
+  (gen-world! 20))
 
 ;; reconnect dispatcher after reload
 ;; (when @sys
 ;;   (threed.dispatcher/dispatch-actions! (:dispatcher @sys) (:system-bus @sys)))
 
-(defn gen-world! [r]
-  (swap! (get-in @sys [:state :universe])
-         (fn [universe]
-           (uni/add-positions universe (gen/sphere [0 0 0] r)))))
-
-(defn empty-world! []
-  (swap! (get-in @sys [:state :universe])
-         (fn [universe]
-           (uni/clear universe))))
 
 (defn -main [& [port]]
   (run port))
