@@ -23,7 +23,8 @@
             [threed.system-bus :refer [send-message!]]
             [threed.message :as message]
             [threed.generator :as gen]
-            [threed.universe :as uni]))
+            [threed.universe :as uni]
+            [threed.math :as math]))
 
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
@@ -63,10 +64,23 @@
   ;; TODO not owkring
   (component/stop @sys))
 
-(defn gen-world! [r]
+(defn gen-world!
+  ([r]
+     (gen-world! [0 0 0] r))
+  ([center r]
+     (swap! (get-in @sys [:state :universe])
+            (fn [universe]
+              (uni/add-positions universe (gen/hull (gen/sphere center r)))))))
+
+(defn gen-worlds! [n]
   (swap! (get-in @sys [:state :universe])
          (fn [universe]
-           (uni/add-positions universe (gen/sphere [0 0 0] r)))))
+           (let [spheres (map (fn [_] (gen/hull (gen/sphere
+                                                    (into [] (math/vec-round [(rand 50) (rand 50) (rand 50)]))
+                                                    (rand 20))))
+                              (range n))
+                 positions (gen/hull (reduce concat spheres))]
+             (uni/add-positions universe positions)))))
 
 (defn empty-world! []
   (swap! (get-in @sys [:state :universe])
@@ -88,7 +102,11 @@
                     (stop-web-server!)
                     (stop-system!))))
 
-  (gen-world! 20))
+  ;; 20 works
+  ;;(gen-world! 20)
+  ;; 30 is slow
+  (gen-world! 30)
+  )
 
 ;; reconnect dispatcher after reload
 ;; (when @sys

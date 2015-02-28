@@ -1,3 +1,5 @@
+;; TODO sphere of size 30 is too slow. Optimize for visibility
+
 (ns threed.renderer
   (:require-macros [cljs.core.async.macros :refer [go]])
   (:require [cljs.core.async :refer [put! chan <!]]
