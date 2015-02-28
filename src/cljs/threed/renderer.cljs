@@ -71,9 +71,9 @@
     (.add scene light)
 
     ;; TODO factor this out into a vector which tracks camera position state
-    (set! (.-x (.-position camera)) 50)
-    (set! (.-y (.-position camera)) 50)
-    (set! (.-z (.-position camera)) 50)
+    (set! (.-x (.-position camera)) 200)
+    (set! (.-y (.-position camera)) 200)
+    (set! (.-z (.-position camera)) 200)
     (.lookAt camera (js/THREE.Vector3. 0 0 0)))
 
   IRender

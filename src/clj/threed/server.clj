@@ -76,8 +76,8 @@
   (swap! (get-in @sys [:state :universe])
          (fn [universe]
            (let [spheres (map (fn [_] (gen/hull (gen/sphere
-                                                    (into [] (math/vec-round [(rand 50) (rand 50) (rand 50)]))
-                                                    (rand 20))))
+                                                    (into [] (math/vec-round [(rand 200) (rand 200) (rand 200)]))
+                                                    (rand 50))))
                               (range n))
                  positions (gen/hull (reduce concat spheres))]
              (uni/add-positions universe positions)))))
