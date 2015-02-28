@@ -21,7 +21,9 @@
 
             [threed.system :refer [system]]
             [threed.system-bus :refer [send-message!]]
-            [threed.message :as message]))
+            [threed.message :as message]
+            [threed.generator :as gen]
+            [threed.universe :as uni]))
 
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
@@ -37,12 +39,13 @@
         ;; (assoc-in api-defaults [:security :anti-forgery]
         ;;           {:read-token (fn [req] (-> req :params :csrf-token))})
         ]
-    (-> (if is-dev?
-          (reload/wrap-reload (wrap-defaults #'routes ring-defaults-config))
-          (wrap-defaults routes ring-defaults-config))
-        (wrap-edn-params)
-        ;;(logger/wrap-with-logger)
-        )))
+    (wrap-edn-params
+     (if is-dev?
+       (reload/wrap-reload (wrap-defaults #'routes ring-defaults-config))
+       (wrap-defaults routes ring-defaults-config))
+
+     ;;(logger/wrap-with-logger)
+     )))
 
 (defn run-web-server [& [port]]
   (let [port (Integer. (or port (env :port) 3000))]
@@ -80,6 +83,16 @@
 ;; reconnect dispatcher after reload
 ;; (when @sys
 ;;   (threed.dispatcher/dispatch-actions! (:dispatcher @sys) (:system-bus @sys)))
+
+(defn gen-world! [r]
+  (swap! (get-in @sys [:state :universe])
+         (fn [universe]
+           (uni/add-positions universe (gen/sphere [0 0 0] r)))))
+
+(defn empty-world! []
+  (swap! (get-in @sys [:state :universe])
+         (fn [universe]
+           (uni/clear universe))))
 
 (defn -main [& [port]]
   (run port))

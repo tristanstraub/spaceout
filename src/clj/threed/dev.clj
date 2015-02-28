@@ -9,9 +9,9 @@
 
 (def inject-devmode-html
   (comp
-     (set-attr :class "is-dev")
-     (prepend (html [:script {:type "text/javascript" :src "js/out/goog/base.js"}]))
-     (append  (html [:script {:type "text/javascript"} "goog.require('threed.dev')"]))))
+   (set-attr :class "is-dev")
+   (prepend (html [:script {:type "text/javascript" :src "js/out/goog/base.js"}]))
+   (append  (html [:script {:type "text/javascript"} "goog.require('threed.dev')"]))))
 
 (defn browser-repl []
   (piggieback/cljs-repl :repl-env (weasel/repl-env :ip "0.0.0.0" :port 9001)))

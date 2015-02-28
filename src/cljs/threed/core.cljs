@@ -25,7 +25,6 @@
 
 (defn main []
   (let [{:keys [system-bus dispatcher state]} (reset! sys (component/start (system)))]
-    (println "request universe")
     (send-message! system-bus (request-universe))
 
     (let [ui-events (get-events)]

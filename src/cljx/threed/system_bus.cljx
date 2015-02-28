@@ -35,7 +35,6 @@
 (defrecord SystemBus [subscriptions messages]
   component/Lifecycle
   (start [this]
-    (println "starting system bus")
     (let [subscriptions (atom [])
           messages (<get-messages)]
       (go (loop []
@@ -89,7 +88,6 @@
         websocket (get-websocket)]
 
     (set! (.-onopen websocket) (fn [e]
-                                 (println "websocket opened")
                                  (go (loop []
                                        (let [message (<! websocket-queue)]
                                          (.send websocket (binding [*print-length* false]

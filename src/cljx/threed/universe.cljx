@@ -59,6 +59,7 @@
 (defn create-universe []
   (map->Universe {:positions #{}}))
 
+;; TODO add colors/material
 (defn add-position [universe position]
   (update-in universe [:positions]
              #(conj % position)))
@@ -73,3 +74,6 @@
 (defn set-positions [universe positions]
   (assoc universe :positions
          (apply hash-set positions)))
+
+(defn clear [universe]
+  (assoc universe :positions #{}))

@@ -56,6 +56,7 @@
     (add-watch universe :renderer
                (fn [key reference old-universe new-universe]
                  (let [new-positions
+                       ;; TODO support removals
                        (clojure.set/difference (:positions new-universe) (:positions old-universe))]
                    (doseq [position new-positions]
                      (blocks/add-block! scene position)))))
@@ -68,9 +69,9 @@
     (.add scene light)
 
     ;; TODO factor this out into a vector which tracks camera position state
-    (set! (.-x (.-position camera)) 10)
-    (set! (.-y (.-position camera)) 10)
-    (set! (.-z (.-position camera)) 10)
+    (set! (.-x (.-position camera)) 50)
+    (set! (.-y (.-position camera)) 50)
+    (set! (.-z (.-position camera)) 50)
     (.lookAt camera (js/THREE.Vector3. 0 0 0)))
 
   IRender
@@ -129,7 +130,6 @@
       :keys (atom #{})})))
 
 (defn attach-renderer [el universe events dispatcher]
-  (println "attach-renderer" universe)
   ;; pre: universe is an atom
 
   (let [context (render-context events dispatcher universe)

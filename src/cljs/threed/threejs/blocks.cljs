@@ -2,7 +2,6 @@
 
 ;; Create a THREE.Mesh representing a cube at position [x y z]
 (defn make-block [pos]
-  (println "make-block:pos" pos)
   (let [[x y z] pos
 
  ;; Each cube needs its own material for picking to work
@@ -19,7 +18,4 @@
 
 (defn add-block!
   [scene pos]
-  (when (not pos)
-
-    (println "add-block!" pos))
   (.add scene (make-block pos)))

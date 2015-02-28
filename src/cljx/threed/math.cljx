@@ -12,6 +12,26 @@
 (defn vec-scale [a s]
   (into [] (map (fn [v] (* s v)) a)))
 
+(defn sgn [v]
+  (if (< v 0) -1 1))
+
+(defn absolute [v]
+  (if (< v 0) (- v) v))
+
+(defn round [v]
+  #+clj
+  (* (sgn v)
+     (Math/floor (+ (absolute v) 0.5)))
+
+  #+cljs
+  (.round js/Math v))
+
+(defn floor [v]
+  (Math/floor v))
+
+(defn vec-round [v]
+  (map #(round %) v))
+
 (defn matrix-create [m f]
   (mapv (fn [j] (mapv (fn [i] (f i j)) (range m))) (range m)))
 

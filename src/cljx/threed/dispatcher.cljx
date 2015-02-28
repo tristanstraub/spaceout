@@ -27,7 +27,6 @@
 
 (defn dispatch-actions! [dispatcher system-bus]
   (let [messages (subscribe! system-bus {:type :action})]
-    (println "starting dispatcher loop")
     (go (loop []
           (let [action (<! messages)]
             ;; remove->local should get translated outside of dispatch-actions!
@@ -44,22 +43,15 @@
   ;; TODO outsource action handling
   IDispatch
   (dispatch! [this action]
-    (println "dispatch:" (:name action) action)
     (case (:name action)
       ;; Add a new block to the universe
-      :add-block
-      (swap! (:universe state)
-             (fn [universe]
-               (add-position universe (:position action))))
+      :add-block (swap! (:universe state) add-position (:position action))
 
       :send-blocks
       (when (not (empty? (:positions action)))
         (send-message! system-bus action))
 
-      :add-blocks
-      (swap! (:universe state)
-             (fn [universe]
-               (add-positions universe (:positions action))))
+      :add-blocks (swap! (:universe state) add-positions (:positions action))
 
       ;; server side send the-universe only
       #+clj
@@ -71,9 +63,7 @@
       #+cljs
       :the-universe
       #+cljs
-      (swap! (:universe state)
-             (fn [universe]
-               (set-positions universe (:positions action))))
+      (swap! (:universe state) set-positions (:positions action))
 
       ;; :else
       (println (str "Unknown action name" (:name action))))))
