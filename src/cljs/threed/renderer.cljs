@@ -45,6 +45,102 @@
 (defn intersector []
   (map->Intersector {:raycaster (js/THREE.Raycaster.)}))
 
+(defprotocol INextMesh
+  (next-mesh! [this scene]))
+
+(defprotocol IStackPushMany
+  (push-many! [this objects]))
+
+(defrecord SingleBlockQueue [queued-blocks]
+  IStackPushMany
+  (push-many! [this blocks]
+    (swap! queued-blocks concat blocks))
+
+  INextMesh
+  (next-mesh! [this scene]
+    (swap! queued-blocks
+           (fn [queued-blocks]
+             (doseq [block (take 5 queued-blocks)]
+               (.add scene block))
+             (drop 5 queued-blocks)))
+    ;; (swap! queued-blocks
+    ;;        (fn [queued-blocks]
+    ;;          (let [n 5
+    ;;                blocks (take n queued-blocks)
+    ;;                materials (swap! materials concat (map #(.-material %) blocks))]
+
+    ;;            (when (not (empty? blocks))
+    ;;              (swap! total-mesh
+    ;;                     (fn [mesh]
+    ;;                       (.remove scene mesh)
+
+    ;;                       (doseq [[block index] (map (fn [a b] [a b]) blocks (range (count blocks)))]
+    ;;                         (.updateMatrix block)
+    ;;                         (.. total-geom (merge
+    ;;                                         (.-geometry block)
+    ;;                                         (.-matrix block)
+    ;;                                         ;; TODO in reverse
+    ;;                                         ;;(- (count materials) 1 index)
+    ;;                                         )))
+
+
+    ;;                       (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. (clj->js materials)))]
+    ;;                         (.add scene new-mesh)
+    ;;                         new-mesh))))
+
+    ;;            (drop n queued-blocks))))
+    ))
+
+(defrecord TotalBlockQueue [total-geom materials total-mesh queued-blocks]
+  IStackPushMany
+  (push-many! [this blocks]
+    (swap! queued-blocks concat blocks))
+
+  INextMesh
+  (next-mesh! [this scene]
+    (swap! queued-blocks
+           (fn [queued-blocks]
+             (doseq [block (take 5 queued-blocks)]
+               (.add scene block))
+             (drop 5 queued-blocks)))
+    ;; (swap! queued-blocks
+    ;;        (fn [queued-blocks]
+    ;;          (let [n 5
+    ;;                blocks (take n queued-blocks)
+    ;;                materials (swap! materials concat (map #(.-material %) blocks))]
+
+    ;;            (when (not (empty? blocks))
+    ;;              (swap! total-mesh
+    ;;                     (fn [mesh]
+    ;;                       (.remove scene mesh)
+
+    ;;                       (doseq [[block index] (map (fn [a b] [a b]) blocks (range (count blocks)))]
+    ;;                         (.updateMatrix block)
+    ;;                         (.. total-geom (merge
+    ;;                                         (.-geometry block)
+    ;;                                         (.-matrix block)
+    ;;                                         ;; TODO in reverse
+    ;;                                         ;;(- (count materials) 1 index)
+    ;;                                         )))
+
+
+    ;;                       (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. (clj->js materials)))]
+    ;;                         (.add scene new-mesh)
+    ;;                         new-mesh))))
+
+    ;;            (drop n queued-blocks))))
+    ))
+
+(defn single-block-queue []
+  (map->SingleBlockQueue {:queued-blocks (atom [])}))
+
+(defn total-block-queue []
+  (map->TotalBlockQueue
+   {:total-geom (js/THREE.Geometry.)
+    :materials (atom [])
+    :total-mesh (atom nil)
+    :queued-blocks (atom [])}))
+
 (defrecord RenderContext [events dispatcher
                           width height
                           scene camera renderer
@@ -52,16 +148,18 @@
                           light clock
                           last-intersect
                           mouse keys
-                          universe]
+                          universe
+                          queue]
   IInitialise
   (initialise! [this]
-    (add-watch universe :renderer
+    (add-watch universe :renderer-new-positions
                (fn [key reference old-universe new-universe]
                  (let [new-positions
                        ;; TODO support removals
                        (clojure.set/difference (:positions new-universe) (:positions old-universe))]
-                   (doseq [position new-positions]
-                     (blocks/add-block! scene position)))))
+                   (println new-positions)
+                   (push-many! queue (map blocks/make-block new-positions)))))
+
 
     (.setClearColor renderer 0xdbf1ff 1)
     (.setSize renderer width height)
@@ -78,6 +176,7 @@
 
   IRender
   (render [this]
+    (next-mesh! queue scene)
     (if-let [events (swap-and-return! events [])]
       ;; TODO find a better syntax for this keys/keys/keys
       (let [keys (swap! keys (fn [keys] (events/events->keys keys events)))]
@@ -85,7 +184,8 @@
         (when-let [last @last-intersect]
           (.. (:object last) -material -color (setHex (:color last))))
         (reset! last-intersect nil)
-        (intersections intersector mouse camera scene last-intersect)
+        ;; TODO reenable intersections which is currently broken after switching to a merged mesh
+        ;;(intersections intersector mouse camera scene last-intersect)
 
         ;; TODO let's remove the side effect, and move the actual side-effecting update into
         ;; a side channel
@@ -107,6 +207,7 @@
       :universe universe
       ;; Communications
       :events events
+      :queue (single-block-queue)
 
       ;; Dimensions
       :width width

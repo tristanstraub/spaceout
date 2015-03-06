@@ -5,7 +5,7 @@
 
 ;; UI Event Handlers
 
-(defn- on-mouse-move [event mouse]
+(defn- on-mouse-move [event mouse camera]
   ;; TODO clientX,clientY depends on location of canvas. Fix this.
   (set! (.. mouse -x) (- (* 2 (/ (.-clientX event) (.-innerWidth js/window))) 1))
   (set! (.. mouse -y) (+ (* -2 (/ (.-clientY event) (.-innerHeight js/window))) 1)))
@@ -49,7 +49,7 @@
 
           (and (= (:event/type event) :mouse)
                (= (:event/action event) :move))
-          (on-mouse-move (:event/object event) mouse)
+          (on-mouse-move (:event/object event) mouse camera)
 
           (and (= (:event/type event) :window)
                (= (:event/action event) :resize))

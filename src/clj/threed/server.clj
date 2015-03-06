@@ -105,7 +105,7 @@
   ;; 20 works
   ;;(gen-world! 20)
   ;; 30 is slow
-  (gen-world! 30)
+  (gen-worlds! 16)
   )
 
 ;; reconnect dispatcher after reload
