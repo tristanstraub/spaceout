@@ -48,21 +48,22 @@
 (defprotocol INextMesh
   (next-mesh! [this scene]))
 
-(defprotocol IStackPushMany
+(defprotocol IQueuePushMany
   (push-many! [this objects]))
 
-(defrecord SingleBlockQueue [queued-blocks]
-  IStackPushMany
+(defprotocol IQueuePop
+  (pop! [this n]))
+
+(defrecord SingleBlockQueue [queue]
+  IQueuePushMany
   (push-many! [this blocks]
-    (swap! queued-blocks concat blocks))
+    (push-many! queue blocks))
 
   INextMesh
   (next-mesh! [this scene]
-    (swap! queued-blocks
-           (fn [queued-blocks]
-             (doseq [block (take 5 queued-blocks)]
-               (.add scene block))
-             (drop 5 queued-blocks)))
+    (doseq [block (pop! queue 5)]
+      (.add scene block))
+
     ;; (swap! queued-blocks
     ;;        (fn [queued-blocks]
     ;;          (let [n 5
@@ -91,8 +92,20 @@
     ;;            (drop n queued-blocks))))
     ))
 
+(defrecord Queue [entries]
+  IQueuePushMany
+  (push-many! [this new-entries]
+    (swap! entries concat new-entries))
+
+  IQueuePop
+  (pop! [this n]
+    (swap-and-return! entries #(take n %) #(drop n %))))
+
+(defn queue []
+  (map->Queue {:entries (atom [])}))
+
 (defrecord TotalBlockQueue [total-geom materials total-mesh queued-blocks]
-  IStackPushMany
+  IQueuePushMany
   (push-many! [this blocks]
     (swap! queued-blocks concat blocks))
 
@@ -103,6 +116,7 @@
              (doseq [block (take 5 queued-blocks)]
                (.add scene block))
              (drop 5 queued-blocks)))
+
     ;; (swap! queued-blocks
     ;;        (fn [queued-blocks]
     ;;          (let [n 5
@@ -132,7 +146,7 @@
     ))
 
 (defn single-block-queue []
-  (map->SingleBlockQueue {:queued-blocks (atom [])}))
+  (map->SingleBlockQueue {:queue (queue)}))
 
 (defn total-block-queue []
   (map->TotalBlockQueue
