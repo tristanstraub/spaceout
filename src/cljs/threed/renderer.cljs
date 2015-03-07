@@ -61,7 +61,7 @@
 
   INextMesh
   (next-mesh! [this scene]
-    (doseq [block (pop! queue 5)]
+    (doseq [[geometry material block] (pop! queue 5)]
       (.add scene block))
 
     ;; (swap! queued-blocks
@@ -104,46 +104,31 @@
 (defn queue []
   (map->Queue {:entries (atom [])}))
 
-(defrecord TotalBlockQueue [total-geom materials total-mesh queued-blocks]
+(defrecord TotalBlockQueue [total-geom queue]
   IQueuePushMany
   (push-many! [this blocks]
-    (swap! queued-blocks concat blocks))
+    (push-many! queue blocks))
 
   INextMesh
   (next-mesh! [this scene]
-    (swap! queued-blocks
-           (fn [queued-blocks]
-             (doseq [block (take 5 queued-blocks)]
-               (.add scene block))
-             (drop 5 queued-blocks)))
-
-    ;; (swap! queued-blocks
-    ;;        (fn [queued-blocks]
-    ;;          (let [n 5
-    ;;                blocks (take n queued-blocks)
-    ;;                materials (swap! materials concat (map #(.-material %) blocks))]
-
-    ;;            (when (not (empty? blocks))
-    ;;              (swap! total-mesh
-    ;;                     (fn [mesh]
-    ;;                       (.remove scene mesh)
-
-    ;;                       (doseq [[block index] (map (fn [a b] [a b]) blocks (range (count blocks)))]
-    ;;                         (.updateMatrix block)
-    ;;                         (.. total-geom (merge
-    ;;                                         (.-geometry block)
-    ;;                                         (.-matrix block)
-    ;;                                         ;; TODO in reverse
-    ;;                                         ;;(- (count materials) 1 index)
-    ;;                                         )))
+    (let [total-geom (js/THREE.Geometry.)
+          materials (array)]
+      (doseq [[geometry material block] (pop! queue 128)]
+        (.push materials material)
+        ;; NOTE cannot reuse same geometry and merge in further stuff
 
 
-    ;;                       (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. (clj->js materials)))]
-    ;;                         (.add scene new-mesh)
-    ;;                         new-mesh))))
+        (.updateMatrix block)
 
-    ;;            (drop n queued-blocks))))
-    ))
+        (.. total-geom (merge
+                        geometry
+                        (.-matrix block)
+                        ;; TODO in reverse
+
+                        0 ;;(- (count materials) 1)
+                        )))
+      (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. materials))]
+        (.add scene new-mesh)))))
 
 (defn single-block-queue []
   (map->SingleBlockQueue {:queue (queue)}))
@@ -151,9 +136,7 @@
 (defn total-block-queue []
   (map->TotalBlockQueue
    {:total-geom (js/THREE.Geometry.)
-    :materials (atom [])
-    :total-mesh (atom nil)
-    :queued-blocks (atom [])}))
+    :queue (queue)}))
 
 (defrecord RenderContext [events dispatcher
                           width height
@@ -171,11 +154,11 @@
                  (let [new-positions
                        ;; TODO support removals
                        (clojure.set/difference (:positions new-universe) (:positions old-universe))]
-                   (println new-positions)
-                   (push-many! queue (map blocks/make-block new-positions)))))
+                   (push-many! queue (map blocks/make-block-parts new-positions)))))
 
 
-    (.setClearColor renderer 0xdbf1ff 1)
+    (let [color 0xdbf1ff]
+      (.setClearColor renderer color 1))
     (.setSize renderer width height)
 
     ;; TODO this should be moved into an abstract representation of the world/view and synchronised
@@ -221,7 +204,7 @@
       :universe universe
       ;; Communications
       :events events
-      :queue (single-block-queue)
+      :queue (total-block-queue)
 
       ;; Dimensions
       :width width

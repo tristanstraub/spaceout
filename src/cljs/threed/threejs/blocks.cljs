@@ -1,7 +1,6 @@
 (ns threed.threejs.blocks)
 
-;; Create a THREE.Mesh representing a cube at position [x y z]
-(defn make-block [pos]
+(defn make-block-parts [pos]
   (let [[x y z] pos
 
  ;; Each cube needs its own material for picking to work
@@ -14,7 +13,14 @@
     (set! (.. cube -position -z) z)
     (set! (.. cube -meta) [x y z])
 
+    [geometry material cube]))
+
+;; Create a THREE.Mesh representing a cube at position [x y z]
+(defn make-block [pos]
+  (let [[geometry material cube] (make-block-parts pos)]
     cube))
+
+
 
 (defn add-block!
   [scene pos]
