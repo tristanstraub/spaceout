@@ -89,12 +89,15 @@
   (clj->js (concat (repeatedly 6 #(make-material 0xff0000))
                    (repeatedly 6 #(make-material 0x00ff00))
                    (repeatedly 6 #(make-material 0x0000ff))
+                   (repeatedly 6 #(make-material 0xffb732))
                    )))
 
 (defn color->material [color]
+  ;; TODO generalize numbers
   (color {:red 0
           :green 6
-          :water 12}))
+          :water 12
+          :lava 18}))
 
 (defn add-blocks [blocks]
   {:name :add-blocks :blocks blocks})

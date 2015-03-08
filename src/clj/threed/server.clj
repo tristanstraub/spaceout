@@ -74,6 +74,9 @@
   ([n & {:keys [color]}]
      (add! (gen/gen-worlds n :color color))))
 
+(defn gen-landscape! [dim]
+  (add! (gen/gen-landscape [0 0 0] dim)))
+
 (defn gen-sandbox! []
   (add! (gen/hull (gen/cube [0 0 0] 50))))
 

@@ -7,6 +7,11 @@
   ;; TODO convert to a recursive version
   (reduce concat (map (fn [i] (reduce concat (map (fn [j] (map (fn [k] [i j k]) (range o))) (range n)))) (range m))))
 
+(defn mmap2
+  [m n]
+  ;; TODO convert to a recursive version
+  (reduce concat (map (fn [i] (reduce concat (map (fn [j] [i j]) (range n)))) (range m))))
+
 (defn cube [position dim]
   (->> (mmap dim dim dim)
        (map #(math/vec-add % position))
@@ -46,3 +51,46 @@
                         (range n))]
        ;; TODO externalise colour
        (map #(block :position % :color color) (hull (reduce concat spheres))))))
+
+(defn average [heights]
+  (/ (reduce + heights) (count heights)))
+
+(defn get-neighbours [positions position]
+  (let [[i _ j] position]
+    (filter (fn [[x _ z]] (or (and (= i x) (or (= j (inc z)) (= j (dec z))))
+                              (and (= j z) (or (= i (inc x)) (= i (dec x))))))
+            positions)))
+
+(defn average-neighbours [positions]
+  ;; (map (fn [position]
+  ;;        (let [neighbour-heights (map second (get-neighbours positions position))
+  ;;              height (when (not-empty neighbour-heights) (average neighbour-heights))]
+  ;;          (if (not-empty neighbour-heights)
+  ;;            (assoc position 1 height)
+  ;;            position)))
+  ;;      positions)
+  (map (fn [[x y z]]
+         [x (Math/floor (/ y 2)) z])
+       positions))
+
+(defn fill-below [positions]
+  (reduce concat (map (fn [[x y z]]
+                        (conj (map (fn [i] [x i z])
+                                   (range y))
+                              [x y z]))
+                      positions)))
+
+(defn gen-landscape [position dim]
+  (->> (mmap dim 1 dim)
+       (map #(math/vec-add % position))
+       (map #(math/vec-sub
+                   %
+                   (math/vec-scale [1 1 1] (math/floor (/ dim 2)))))
+       ;; add random heights
+       (map #(math/vec-add [0 (* 30 (rand)) 0] %))
+       ;; average neighbour heights
+       (apply hash-set)
+       average-neighbours
+       fill-below
+       (apply hash-set)
+       (map #(block :position % :color :lava))))
