@@ -56,28 +56,28 @@
       :add-block (swap! (:universe state) add-position (:position action))
 
       :send-blocks
-      (when (not (empty? (:positions action)))
+      (when (not (empty? (:blocks action)))
         (send-message! system-bus (local->remote action)))
 
       :send-remove-blocks
-      (when (not (empty? (:positions action)))
+      (when (not (empty? (:blocks action)))
         (send-message! system-bus (local->remote action)))
 
       ;; TODO control what is allowed on the server
-      :add-blocks (swap! (:universe state) add-positions (:positions action))
-      :remove-blocks (swap! (:universe state) remove-positions (:positions action))
+      :add-blocks (swap! (:universe state) add-positions (:blocks action))
+      :remove-blocks (swap! (:universe state) remove-positions (:blocks action))
 
       ;; server side send the-universe only
       #+clj
       :send-universe
       #+clj
-      (send-message! system-bus (the-universe (:positions @(:universe state))))
+      (send-message! system-bus (the-universe (:blocks @(:universe state))))
 
       ;; client side replace only
       #+cljs
       :the-universe
       #+cljs
-      (swap! (:universe state) set-positions (:positions action))
+      (swap! (:universe state) set-positions (:blocks action))
 
       ;; :else
       (println (str "Unknown action name" (:name action))))))

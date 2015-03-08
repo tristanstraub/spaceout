@@ -6,17 +6,21 @@
   (assoc (message :type :action)
     :name name))
 
-(defn add-block [pos]
-  (assoc (action :add-block)
-    :position pos))
+(defn add-block
+  ([pos]
+     (add-block pos 0xffffff))
+  ([pos color]
+     (assoc (action :add-block)
+       :position pos
+       :color color)))
 
 (defn send-blocks [positions]
   (assoc (action :send-blocks)
-    :positions positions))
+    :blocks positions))
 
 (defn send-remove-blocks [positions]
   (assoc (action :send-remove-blocks)
-    :positions positions))
+    :blocks positions))
 
 
 (defn request-universe []
@@ -24,4 +28,4 @@
 
 (defn the-universe [positions]
   (assoc (action :the-universe)
-    :positions positions))
+    :blocks positions))

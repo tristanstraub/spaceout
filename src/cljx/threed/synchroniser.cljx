@@ -17,11 +17,11 @@
     (add-watch (:universe state) :synchroniser
                (fn [key reference old-universe new-universe]
                  (let [new-positions (clojure.set/difference
-                                                  (:positions new-universe)
-                                                  (:positions old-universe))
+                                                  (:blocks new-universe)
+                                                  (:blocks old-universe))
                        removed-positions (clojure.set/difference
-                                                      (:positions old-universe)
-                                                      (:positions new-universe))]
+                                                      (:blocks old-universe)
+                                                      (:blocks new-universe))]
                    (when (not (empty? new-positions))
                      ;; TODO reconsider how send-blocks gets transformed and dispatched from client to server
                      (dispatch! dispatcher (send-blocks new-positions)))

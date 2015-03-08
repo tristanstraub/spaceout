@@ -40,6 +40,6 @@
                                  dispatcher))
               om/IRender
               (render [_]
-                (html [:div #_(pr-str (:positions app))]))))
+                (html [:div #_(pr-str (:blocks app))]))))
           app-state
           {:target (. js/document (getElementById "app"))}))))

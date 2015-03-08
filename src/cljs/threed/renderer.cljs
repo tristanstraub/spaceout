@@ -84,10 +84,10 @@
   (clj->js (take (dec (* 2 nmaterials)) (repeatedly #(js/THREE.MeshLambertMaterial. (clj->js {:color (rand-color!)}))))))
 
 (defn add-blocks [positions]
-  {:name :add-blocks :positions positions})
+  {:name :add-blocks :blocks positions})
 
 (defn remove-blocks [position]
-  {:name :remove-blocks :positions position})
+  {:name :remove-blocks :blocks position})
 
 (defrecord MergedBlockQueue [total-geom total-meshs queue positions]
   IQueuePushMany
@@ -103,7 +103,7 @@
           (case (:name action)
             :add-blocks
             (do
-              (doseq [[geometry material block] (map #(blocks/make-block-parts %) (:positions action))]
+              (doseq [[geometry material block] (map #(blocks/make-block-parts %) (:blocks action))]
                 ;; NOTE cannot reuse same geometry and merge in further stuff
                 (.updateMatrix block)
 
@@ -115,17 +115,17 @@
               (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. materials))]
                 (.add scene new-mesh)
                 (swap! total-meshs conj new-mesh)
-                (swap! positions #(apply conj % (:positions action)))))
+                (swap! positions #(apply conj % (:blocks action)))))
 
             :remove-blocks
             ;; TODO efficiently remove block (partitioning)
             (do
-              (println "removing blocks" (count (:positions action)))
+              (println "removing blocks" (count (:blocks action)))
               (doseq [mesh @total-meshs]
                 (println "removing mesh")
                 (.remove scene mesh))
               (reset! total-meshs [])
-              (swap! positions #(apply disj % (:positions action)))
+              (swap! positions #(apply disj % (:blocks action)))
               (println "positions after removal" (count @positions))
               ;; HACK -- rebuild the whole world
               (push-many! this [(add-blocks @positions)]))))))))
@@ -137,7 +137,7 @@
   (map->MergedBlockQueue
    {:total-geom (js/THREE.Geometry.)
     :total-meshs (atom [])
-    :positions (atom #{})
+    :blocks (atom #{})
     :queue (queue)}))
 
 (defrecord RenderContext [events dispatcher
@@ -154,11 +154,11 @@
     (add-watch universe :renderer-new-positions
                (fn [key reference old-universe new-universe]
                  (let [new-positions (clojure.set/difference
-                                                  (:positions new-universe)
-                                                  (:positions old-universe))
+                                                  (:blocks new-universe)
+                                                  (:blocks old-universe))
                        removed-positions (clojure.set/difference
-                                                      (:positions old-universe)
-                                                      (:positions new-universe))]
+                                                      (:blocks old-universe)
+                                                      (:blocks new-universe))]
 
                    (when (not-empty new-universe)
                      (push-many! queue [(add-blocks (sort-by first new-positions))]))

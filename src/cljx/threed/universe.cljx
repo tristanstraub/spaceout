@@ -32,7 +32,7 @@
 (defrecord SliceView [slice]
   IView
   (view [this universe]
-    (update-in universe [:positions]
+    (update-in universe [:blocks]
                (fn [positions]
                  (into #{} (filter (partial in-region? slice) positions))))))
 
@@ -48,39 +48,41 @@
   ;; (diff [this another]
   ;;   ;; TODO not sure about how these positions are created
   ;;   (assoc (universe)
-  ;;     :positions
-  ;;     (clojure.set/difference (:positions this) (:positions another))))
+  ;;     :blocks
+  ;;     (clojure.set/difference (:blocks this) (:blocks another))))
 
   ;; IPatch
   ;; (patch [this diff]
-  ;;   (update-in this [:positions] clojure.set/union (:positions diff)))
+  ;;   (update-in this [:blocks] clojure.set/union (:blocks diff)))
   )
 
+;; TODO rename positions -> blocks
+
 (defn create-universe []
-  (map->Universe {:positions #{}}))
+  (map->Universe {:blocks #{}}))
 
 ;; TODO add colors/material
 (defn add-position [universe position]
-  (update-in universe [:positions]
+  (update-in universe [:blocks]
              #(conj % position)))
 
 (defn add-positions [universe positions]
-  (update-in universe [:positions]
+  (update-in universe [:blocks]
              (fn [upos]
                (if (empty? positions)
                  upos
                  (apply conj upos positions)))))
 
 (defn remove-positions [universe positions]
-  (update-in universe [:positions]
+  (update-in universe [:blocks]
              (fn [upos]
                (if (empty? positions)
                  upos
                  (apply disj upos positions)))))
 
 (defn set-positions [universe positions]
-  (assoc universe :positions
+  (assoc universe :blocks
          (apply hash-set positions)))
 
 (defn clear [universe]
-  (assoc universe :positions #{}))
+  (assoc universe :blocks #{}))
