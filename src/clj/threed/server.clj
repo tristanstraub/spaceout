@@ -70,8 +70,9 @@
          (fn [universe]
            (uni/add-blocks universe blocks))))
 
-(defn gen-worlds! [n]
-  (add! (gen/gen-worlds n)))
+(defn gen-worlds!
+  ([n & {:keys [color]}]
+     (add! (gen/gen-worlds n :color color))))
 
 (defn gen-sandbox! []
   (add! (gen/hull (gen/cube [0 0 0] 50))))

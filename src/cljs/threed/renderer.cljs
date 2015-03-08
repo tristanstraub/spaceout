@@ -82,8 +82,19 @@
   (Math/floor (* 0xffffff (rand))))
 
 (def nmaterials 6)
+(defn make-material [color]
+  (js/THREE.MeshLambertMaterial. (clj->js {:color color})))
+
 (def materials
-  (clj->js (take (dec (* 2 nmaterials)) (repeatedly #(js/THREE.MeshLambertMaterial. (clj->js {:color (rand-color!)}))))))
+  (clj->js (concat (repeatedly 6 #(make-material 0xff0000))
+                   (repeatedly 6 #(make-material 0x00ff00))
+                   (repeatedly 6 #(make-material 0x0000ff))
+                   )))
+
+(defn color->material [color]
+  (color {:red 0
+          :green 6
+          :water 12}))
 
 (defn add-blocks [blocks]
   {:name :add-blocks :blocks blocks})
@@ -107,16 +118,18 @@
           (case (:name action)
             :add-blocks
             (do
+              (println "next-mesh!:add-blocks" (first (:blocks action)))
               ;;(println "adding-blocks" (first (:blocks action)) (count (:blocks action)))
               ;; TODO include color
-              (doseq [[geometry material block] (map #(blocks/make-block-parts (:position %)) (:blocks action))]
+              (doseq [[block [geometry material cube]] (map (fn [block] [block (blocks/make-block-parts (:position block))]) (:blocks action))]
                 ;; NOTE cannot reuse same geometry and merge in further stuff
-                (.updateMatrix block)
+                (.updateMatrix cube)
 
                 (.. total-geom (merge
                                 geometry
-                                (.-matrix block)
-                                (Math/floor (* nmaterials (rand))))))
+                                (.-matrix cube)
+                                (color->material (:color block))
+                                )))
 
               (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. materials))]
                 (.add scene new-mesh)

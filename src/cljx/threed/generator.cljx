@@ -39,11 +39,10 @@
     (remove #(surrounded? positions %) positions)))
 
 (defn gen-worlds
-  ([n]
-     (gen-worlds n :rand rand :dim 200 :radius 50))
-  ([n & {:keys [rand dim radius]}]
+  ([n & {:keys [rand dim radius color] :or {rand rand dim 200 radius 50 color :red}}]
      (let [spheres (map (fn [_] (hull (sphere
                                        (into [] (math/vec-round [(rand dim) (rand dim) (rand dim)]))
                                        (rand radius))))
                         (range n))]
-       (map #(block :position %) (hull (reduce concat spheres))))))
+       ;; TODO externalise colour
+       (map #(block :position % :color color) (hull (reduce concat spheres))))))
