@@ -71,6 +71,13 @@
                  upos
                  (apply conj upos positions)))))
 
+(defn remove-positions [universe positions]
+  (update-in universe [:positions]
+             (fn [upos]
+               (if (empty? positions)
+                 upos
+                 (apply disj upos positions)))))
+
 (defn set-positions [universe positions]
   (assoc universe :positions
          (apply hash-set positions)))

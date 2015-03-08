@@ -61,31 +61,33 @@
   (defonce sys (atom (component/start (system)))))
 
 (defn stop-system! []
-  ;; TODO not owkring
+  ;; TODO not working
   (component/stop @sys))
 
-(defn gen-world!
-  ([r]
-     (gen-world! [0 0 0] r))
-  ([center r]
-     (swap! (get-in @sys [:state :universe])
-            (fn [universe]
-              (uni/add-positions universe (gen/hull (gen/sphere center r)))))))
+(defn add!
+  [positions]
+  (swap! (get-in @sys [:state :universe])
+         (fn [universe]
+           (uni/add-positions universe positions))))
 
 (defn gen-worlds! [n]
-  (swap! (get-in @sys [:state :universe])
-         (fn [universe]
-           (let [spheres (map (fn [_] (gen/hull (gen/sphere
-                                                    (into [] (math/vec-round [(rand 200) (rand 200) (rand 200)]))
-                                                    (rand 50))))
-                              (range n))
-                 positions (gen/hull (reduce concat spheres))]
-             (uni/add-positions universe positions)))))
+  (add! (gen/gen-worlds n)))
+
+(defn gen-sandbox! []
+  (add! (gen/hull (gen/cube [0 0 0] 50))))
+
+(defn get-universe-atom []
+  (get-in @sys [:state :universe]))
 
 (defn empty-world! []
-  (swap! (get-in @sys [:state :universe])
+  (swap! (get-universe-atom)
          (fn [universe]
            (uni/clear universe))))
+
+(defn remove-positions! [positions]
+  (swap! (get-universe-atom)
+         (fn [universe]
+           (uni/remove-positions universe positions))))
 
 (defn run [& [port]]
   (defonce stop! (atom nil))
@@ -102,16 +104,7 @@
                     (stop-web-server!)
                     (stop-system!))))
 
-  ;; 20 works
-  ;;(gen-world! 20)
-  ;; 30 is slow
-  (gen-worlds! 16)
-  )
-
-;; reconnect dispatcher after reload
-;; (when @sys
-;;   (threed.dispatcher/dispatch-actions! (:dispatcher @sys) (:system-bus @sys)))
-
+  (gen-worlds! 16))
 
 (defn -main [& [port]]
   (run port))

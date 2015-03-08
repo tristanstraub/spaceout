@@ -34,7 +34,7 @@
                    )
 
 
-          speed 10]
+          speed 1]
 
       (set-threed-vec! (.-position camera) (vec-add camera-pos
                                                     (vec-add (vec-scale dir (* speed dz))

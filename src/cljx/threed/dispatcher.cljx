@@ -12,7 +12,7 @@
             #+cljs
             [cljs.core.async :refer [put! chan <!]]
 
-            [threed.universe :refer [add-positions set-positions add-position]]
+            [threed.universe :refer [remove-positions add-positions set-positions add-position]]
             [threed.system-bus :refer [subscribe! send-message!]]
             [threed.actions :refer [the-universe]]))
 
@@ -22,10 +22,18 @@
 (defn remote->local [action]
   (case (:name action)
     :send-blocks (assoc action :name :add-blocks)
-    #+clj :request-universe #+clj (assoc action :name :send-universe)
+    :send-remove-blocks (assoc action :name :remove-blocks)
+    :request-universe (assoc action :name :send-universe)
+    action))
+
+(defn local->remote [action]
+  (case (:name action)
+    :send-blocks (assoc action :name :add-blocks)
+    :send-remove-blocks (assoc action :name :remove-blocks)
     action))
 
 (defn dispatch-actions! [dispatcher system-bus]
+  ;; TODO enforce that system-bus should only retrieve remotely sent messages
   (let [messages (subscribe! system-bus {:type :action})]
     (go (loop []
           (let [action (<! messages)]
@@ -49,9 +57,15 @@
 
       :send-blocks
       (when (not (empty? (:positions action)))
-        (send-message! system-bus action))
+        (send-message! system-bus (local->remote action)))
 
+      :send-remove-blocks
+      (when (not (empty? (:positions action)))
+        (send-message! system-bus (local->remote action)))
+
+      ;; TODO control what is allowed on the server
       :add-blocks (swap! (:universe state) add-positions (:positions action))
+      :remove-blocks (swap! (:universe state) remove-positions (:positions action))
 
       ;; server side send the-universe only
       #+clj

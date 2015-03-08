@@ -52,7 +52,7 @@
   (push-many! [this objects]))
 
 (defprotocol IQueuePop
-  (pop! [this n]))
+  (pop-many! [this n]))
 
 (defrecord SingleBlockQueue [queue]
   IQueuePushMany
@@ -61,36 +61,8 @@
 
   INextMesh
   (next-mesh! [this scene]
-    (doseq [[geometry material block] (pop! queue 5)]
-      (.add scene block))
-
-    ;; (swap! queued-blocks
-    ;;        (fn [queued-blocks]
-    ;;          (let [n 5
-    ;;                blocks (take n queued-blocks)
-    ;;                materials (swap! materials concat (map #(.-material %) blocks))]
-
-    ;;            (when (not (empty? blocks))
-    ;;              (swap! total-mesh
-    ;;                     (fn [mesh]
-    ;;                       (.remove scene mesh)
-
-    ;;                       (doseq [[block index] (map (fn [a b] [a b]) blocks (range (count blocks)))]
-    ;;                         (.updateMatrix block)
-    ;;                         (.. total-geom (merge
-    ;;                                         (.-geometry block)
-    ;;                                         (.-matrix block)
-    ;;                                         ;; TODO in reverse
-    ;;                                         ;;(- (count materials) 1 index)
-    ;;                                         )))
-
-
-    ;;                       (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. (clj->js materials)))]
-    ;;                         (.add scene new-mesh)
-    ;;                         new-mesh))))
-
-    ;;            (drop n queued-blocks))))
-    ))
+    (doseq [[geometry material block] (pop-many! queue 5)]
+      (.add scene block))))
 
 (defrecord Queue [entries]
   IQueuePushMany
@@ -98,13 +70,26 @@
     (swap! entries concat new-entries))
 
   IQueuePop
-  (pop! [this n]
+  (pop-many! [this n]
     (swap-and-return! entries #(take n %) #(drop n %))))
 
 (defn queue []
   (map->Queue {:entries (atom [])}))
 
-(defrecord TotalBlockQueue [total-geom queue]
+(defn rand-color! []
+  (Math/floor (* 0xffffff (rand))))
+
+(def nmaterials 6)
+(def materials
+  (clj->js (take (dec (* 2 nmaterials)) (repeatedly #(js/THREE.MeshLambertMaterial. (clj->js {:color (rand-color!)}))))))
+
+(defn add-blocks [positions]
+  {:name :add-blocks :positions positions})
+
+(defn remove-blocks [position]
+  {:name :remove-blocks :positions position})
+
+(defrecord MergedBlockQueue [total-geom total-meshs queue positions]
   IQueuePushMany
   (push-many! [this blocks]
     (push-many! queue blocks))
@@ -112,30 +97,47 @@
   INextMesh
   (next-mesh! [this scene]
     (let [total-geom (js/THREE.Geometry.)
-          materials (array)]
-      (doseq [[geometry material block] (pop! queue 128)]
-        (.push materials material)
-        ;; NOTE cannot reuse same geometry and merge in further stuff
+          top (pop-many! queue 512)]
+      (when (not-empty top)
+        (doseq [[index action] (map-indexed (fn [i j] [i j]) top)]
+          (case (:name action)
+            :add-blocks
+            (do
+              (doseq [[geometry material block] (map #(blocks/make-block-parts %) (:positions action))]
+                ;; NOTE cannot reuse same geometry and merge in further stuff
+                (.updateMatrix block)
 
+                (.. total-geom (merge
+                                geometry
+                                (.-matrix block)
+                                (Math/floor (* nmaterials (rand))))))
 
-        (.updateMatrix block)
+              (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. materials))]
+                (.add scene new-mesh)
+                (swap! total-meshs conj new-mesh)
+                (swap! positions #(apply conj % (:positions action)))))
 
-        (.. total-geom (merge
-                        geometry
-                        (.-matrix block)
-                        ;; TODO in reverse
-
-                        0 ;;(- (count materials) 1)
-                        )))
-      (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. materials))]
-        (.add scene new-mesh)))))
+            :remove-blocks
+            ;; TODO efficiently remove block (partitioning)
+            (do
+              (println "removing blocks" (count (:positions action)))
+              (doseq [mesh @total-meshs]
+                (println "removing mesh")
+                (.remove scene mesh))
+              (reset! total-meshs [])
+              (swap! positions #(apply disj % (:positions action)))
+              (println "positions after removal" (count @positions))
+              ;; HACK -- rebuild the whole world
+              (push-many! this [(add-blocks @positions)]))))))))
 
 (defn single-block-queue []
   (map->SingleBlockQueue {:queue (queue)}))
 
-(defn total-block-queue []
-  (map->TotalBlockQueue
+(defn merged-block-queue []
+  (map->MergedBlockQueue
    {:total-geom (js/THREE.Geometry.)
+    :total-meshs (atom [])
+    :positions (atom #{})
     :queue (queue)}))
 
 (defrecord RenderContext [events dispatcher
@@ -151,13 +153,23 @@
   (initialise! [this]
     (add-watch universe :renderer-new-positions
                (fn [key reference old-universe new-universe]
-                 (let [new-positions
-                       ;; TODO support removals
-                       (clojure.set/difference (:positions new-universe) (:positions old-universe))]
-                   (push-many! queue (map blocks/make-block-parts new-positions)))))
+                 (let [new-positions (clojure.set/difference
+                                                  (:positions new-universe)
+                                                  (:positions old-universe))
+                       removed-positions (clojure.set/difference
+                                                      (:positions old-universe)
+                                                      (:positions new-universe))]
+
+                   (when (not-empty new-universe)
+                     (push-many! queue [(add-blocks (sort-by first new-positions))]))
+
+                   (when (not-empty removed-positions)
+                     (push-many! queue [(remove-blocks (sort-by first removed-positions))])))))
 
 
-    (let [color 0xdbf1ff]
+    (let [color ;;0xdbf1ff
+          0x000000
+          ]
       (.setClearColor renderer color 1))
     (.setSize renderer width height)
 
@@ -204,7 +216,7 @@
       :universe universe
       ;; Communications
       :events events
-      :queue (total-block-queue)
+      :queue (merged-block-queue)
 
       ;; Dimensions
       :width width

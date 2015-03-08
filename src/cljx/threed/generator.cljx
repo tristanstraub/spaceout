@@ -34,3 +34,10 @@
 (defn hull [positions]
   (let [positions (apply hash-set positions)]
     (remove #(surrounded? positions %) positions)))
+
+(defn gen-worlds [n]
+  (let [spheres (map (fn [_] (hull (sphere
+                                    (into [] (math/vec-round [(rand 200) (rand 200) (rand 200)]))
+                                    (rand 50))))
+                     (range n))]
+    (hull (reduce concat spheres))))

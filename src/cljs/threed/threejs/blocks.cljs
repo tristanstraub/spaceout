@@ -1,11 +1,24 @@
 (ns threed.threejs.blocks)
 
+;; (defn to-hex [num]
+;;   (let [symbols "0123456789abcdef"]
+;;     (str "0x"
+;;          (nth symbols (Math/floor (mod k 16)))
+;;          (nth symbols (Math/floor (mod (/ k 16) 16)))
+;;          (nth symbols (Math/floor (mod (/ k 16 16) 16)))
+;;          (nth symbols (Math/floor (mod (/ k 16 16 16) 16)))
+;;          (nth symbols (Math/floor (mod (/ k 16 16 16 16) 16)))
+;;          (nth symbols (Math/floor (mod (/ k 16 16 16 16 16) 16))))))
+
+(defn rand-color! []
+  (Math/floor (* 0xffffff (rand))))
+
 (defn make-block-parts [pos]
   (let [[x y z] pos
 
  ;; Each cube needs its own material for picking to work
         geometry (js/THREE.BoxGeometry. 1 1 1)
-        material (js/THREE.MeshLambertMaterial. (clj->js {:color 0x48b4fb}))
+        material (js/THREE.MeshLambertMaterial. (clj->js {:color (rand-color!)}))
         cube (js/THREE.Mesh. geometry material)]
 
     (set! (.. cube -position -x) x)

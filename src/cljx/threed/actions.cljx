@@ -1,3 +1,4 @@
+
 (ns threed.actions
   (:require [threed.message :refer [message]]))
 
@@ -12,6 +13,11 @@
 (defn send-blocks [positions]
   (assoc (action :send-blocks)
     :positions positions))
+
+(defn send-remove-blocks [positions]
+  (assoc (action :send-remove-blocks)
+    :positions positions))
+
 
 (defn request-universe []
   (action :request-universe))
