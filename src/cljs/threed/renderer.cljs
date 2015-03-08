@@ -19,6 +19,8 @@
             [threed.dispatcher :refer [dispatch!]]
             [threed.actions :refer [send-blocks]]))
 
+(def group-size 512)
+
 (defprotocol IInitialise
   (initialise! [this]))
 
@@ -83,13 +85,13 @@
 (def materials
   (clj->js (take (dec (* 2 nmaterials)) (repeatedly #(js/THREE.MeshLambertMaterial. (clj->js {:color (rand-color!)}))))))
 
-(defn add-blocks [positions]
-  {:name :add-blocks :blocks positions})
+(defn add-blocks [blocks]
+  {:name :add-blocks :blocks blocks})
 
-(defn remove-blocks [position]
-  {:name :remove-blocks :blocks position})
+(defn remove-blocks [blocks]
+  {:name :remove-blocks :blocks blocks})
 
-(defrecord MergedBlockQueue [total-geom total-meshs queue positions]
+(defrecord MergedBlockQueue [total-geom total-meshs queue blocks]
   IQueuePushMany
   (push-many! [this blocks]
     (push-many! queue blocks))
@@ -97,13 +99,17 @@
   INextMesh
   (next-mesh! [this scene]
     (let [total-geom (js/THREE.Geometry.)
-          top (pop-many! queue 512)]
+          top (pop-many! queue ;;64
+                         1
+                         )]
       (when (not-empty top)
         (doseq [[index action] (map-indexed (fn [i j] [i j]) top)]
           (case (:name action)
             :add-blocks
             (do
-              (doseq [[geometry material block] (map #(blocks/make-block-parts %) (:blocks action))]
+              ;;(println "adding-blocks" (first (:blocks action)) (count (:blocks action)))
+              ;; TODO include color
+              (doseq [[geometry material block] (map #(blocks/make-block-parts (:position %)) (:blocks action))]
                 ;; NOTE cannot reuse same geometry and merge in further stuff
                 (.updateMatrix block)
 
@@ -115,20 +121,22 @@
               (let [new-mesh (js/THREE.Mesh. total-geom (js/THREE.MeshFaceMaterial. materials))]
                 (.add scene new-mesh)
                 (swap! total-meshs conj new-mesh)
-                (swap! positions #(apply conj % (:blocks action)))))
+                (swap! blocks #(apply conj % (:blocks action)))))
 
             :remove-blocks
             ;; TODO efficiently remove block (partitioning)
             (do
-              (println "removing blocks" (count (:blocks action)))
+              ;;(println "removing blocks" (count (:blocks action)))
               (doseq [mesh @total-meshs]
                 (println "removing mesh")
                 (.remove scene mesh))
               (reset! total-meshs [])
-              (swap! positions #(apply disj % (:blocks action)))
-              (println "positions after removal" (count @positions))
+              (swap! blocks #(apply disj % (:blocks action)))
+              ;;(println "blocks after removal" (count @blocks))
               ;; HACK -- rebuild the whole world
-              (push-many! this [(add-blocks @positions)]))))))))
+
+              (when (not-empty @blocks)
+                (push-many! this (map #(add-blocks %) (partition-all group-size @blocks)))))))))))
 
 (defn single-block-queue []
   (map->SingleBlockQueue {:queue (queue)}))
@@ -151,20 +159,21 @@
                           queue]
   IInitialise
   (initialise! [this]
-    (add-watch universe :renderer-new-positions
+    (add-watch universe :renderer-new-blocks
                (fn [key reference old-universe new-universe]
-                 (let [new-positions (clojure.set/difference
+                 (let [new-blocks (clojure.set/difference
                                                   (:blocks new-universe)
                                                   (:blocks old-universe))
-                       removed-positions (clojure.set/difference
+                       removed-blocks (clojure.set/difference
                                                       (:blocks old-universe)
                                                       (:blocks new-universe))]
 
                    (when (not-empty new-universe)
-                     (push-many! queue [(add-blocks (sort-by first new-positions))]))
+                     (push-many! queue (map #(add-blocks %) (partition-all group-size (sort-by #(-> % :position first) new-blocks)))))
 
-                   (when (not-empty removed-positions)
-                     (push-many! queue [(remove-blocks (sort-by first removed-positions))])))))
+                   (when (not-empty removed-blocks)
+                     (push-many! queue [(remove-blocks (sort-by first removed-blocks))])))))
+
 
 
     (let [color ;;0xdbf1ff

@@ -12,7 +12,8 @@
             [ring.middleware.reload :as reload]
             [cheshire.core :refer :all]
             [clojure.tools.reader.edn :as edn]
-            [threed.message]))
+            [threed.message]
+            [threed.universe]))
 
 ;; TODO rename comms to websockets
 
@@ -29,12 +30,14 @@
 (defn <get-messages []
   messages)
 
+;; Unify comms/system-bus for clj/cljs
 (defn ws [req]
   (with-channel req con
     (swap! clients assoc con true)
     (on-receive con (fn [msg]
                       (put! messages
-                            (edn/read-string {:readers {'threed.message.Message #'threed.message/read-message}} msg))))
+                            (edn/read-string {:readers {'threed.message.Message #'threed.message/read-message
+                                                        'threed.universe.Block #'threed.universe/read-block}} msg))))
 
     (on-close con (fn [status]
                     (swap! clients dissoc con)))))

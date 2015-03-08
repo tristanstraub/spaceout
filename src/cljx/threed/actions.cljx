@@ -14,18 +14,18 @@
        :position pos
        :color color)))
 
-(defn send-blocks [positions]
+(defn send-blocks [blocks]
   (assoc (action :send-blocks)
-    :blocks positions))
+    :blocks blocks))
 
-(defn send-remove-blocks [positions]
+(defn send-remove-blocks [blocks]
   (assoc (action :send-remove-blocks)
-    :blocks positions))
+    :blocks blocks))
 
 
 (defn request-universe []
   (action :request-universe))
 
-(defn the-universe [positions]
+(defn the-universe [blocks]
   (assoc (action :the-universe)
-    :blocks positions))
+    :blocks blocks))

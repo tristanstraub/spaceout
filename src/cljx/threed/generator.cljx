@@ -1,5 +1,6 @@
 (ns threed.generator
-  (:require [threed.math :as math]))
+  (:require [threed.math :as math]
+            [threed.universe :refer [block]]))
 
 (defn mmap
   [m n o]
@@ -12,7 +13,8 @@
        (map #(math/vec-sub
                    %
                    (math/vec-scale [1 1 1] (math/floor (/ dim 2)))
-                   ))))
+                   ))
+       (apply hash-set)))
 
 (defn within-distance-from?
   [center radius position]
@@ -24,20 +26,24 @@
        (filter #(within-distance-from? center (/ diameter 2) %))))
 
 (defn surrounded? [positions position]
-  (and (positions (math/vec-add position [-1 0 0]))
-       (positions (math/vec-add position [1 0 0]))
-       (positions (math/vec-add position [0 -1 0]))
-       (positions (math/vec-add position [0 1 0]))
-       (positions (math/vec-add position [0 0 -1]))
-       (positions (math/vec-add position [0 0 1]))))
+  ;; TODO rename :position to :coords
+  (and (contains? positions (math/vec-add position [-1 0 0]))
+       (contains? positions (math/vec-add position [1 0 0]))
+       (contains? positions (math/vec-add position [0 -1 0]))
+       (contains? positions (math/vec-add position [0 1 0]))
+       (contains? positions (math/vec-add position [0 0 -1]))
+       (contains? positions (math/vec-add position [0 0 1]))))
 
 (defn hull [positions]
   (let [positions (apply hash-set positions)]
     (remove #(surrounded? positions %) positions)))
 
-(defn gen-worlds [n]
-  (let [spheres (map (fn [_] (hull (sphere
-                                    (into [] (math/vec-round [(rand 200) (rand 200) (rand 200)]))
-                                    (rand 50))))
-                     (range n))]
-    (hull (reduce concat spheres))))
+(defn gen-worlds
+  ([n]
+     (gen-worlds n :rand rand :dim 200 :radius 50))
+  ([n & {:keys [rand dim radius]}]
+     (let [spheres (map (fn [_] (hull (sphere
+                                       (into [] (math/vec-round [(rand dim) (rand dim) (rand dim)]))
+                                       (rand radius))))
+                        (range n))]
+       (map #(block :position %) (hull (reduce concat spheres))))))

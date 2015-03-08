@@ -2,8 +2,8 @@
 
 (declare universe)
 
-(defprotocol IUniverse
-  (add-block [this position]))
+;; (defprotocol IUniverse
+;;   (add-block [this block]))
 
 ;; (defprotocol IDiff
 ;;   (diff [this another]))
@@ -33,8 +33,8 @@
   IView
   (view [this universe]
     (update-in universe [:blocks]
-               (fn [positions]
-                 (into #{} (filter (partial in-region? slice) positions))))))
+               (fn [blocks]
+                 (into #{} (filter (partial in-region? slice) blocks))))))
 
 (defn- box-slice [from to] (map->BoxSlice {:from from :to to}))
 
@@ -43,10 +43,10 @@
 (defn box-slice-view [from to]
   (slice-view (box-slice from to)))
 
-(defrecord Universe [positions]
+(defrecord Universe [blocks]
   ;; IDiff
   ;; (diff [this another]
-  ;;   ;; TODO not sure about how these positions are created
+  ;;   ;; TODO not sure about how these blocks are created
   ;;   (assoc (universe)
   ;;     :blocks
   ;;     (clojure.set/difference (:blocks this) (:blocks another))))
@@ -56,33 +56,41 @@
   ;;   (update-in this [:blocks] clojure.set/union (:blocks diff)))
   )
 
-;; TODO rename positions -> blocks
+;; TODO rename blocks -> blocks
 
 (defn create-universe []
   (map->Universe {:blocks #{}}))
 
 ;; TODO add colors/material
-(defn add-position [universe position]
+(defn add-block [universe block]
   (update-in universe [:blocks]
-             #(conj % position)))
+             #(conj % block)))
 
-(defn add-positions [universe positions]
-  (update-in universe [:blocks]
-             (fn [upos]
-               (if (empty? positions)
-                 upos
-                 (apply conj upos positions)))))
-
-(defn remove-positions [universe positions]
+(defn add-blocks [universe blocks]
   (update-in universe [:blocks]
              (fn [upos]
-               (if (empty? positions)
+               (if (empty? blocks)
                  upos
-                 (apply disj upos positions)))))
+                 (apply conj upos blocks)))))
 
-(defn set-positions [universe positions]
+(defn remove-blocks [universe blocks]
+  (update-in universe [:blocks]
+             (fn [upos]
+               (if (empty? blocks)
+                 upos
+                 (apply disj upos blocks)))))
+
+(defn set-blocks [universe blocks]
   (assoc universe :blocks
-         (apply hash-set positions)))
+         (apply hash-set blocks)))
 
 (defn clear [universe]
   (assoc universe :blocks #{}))
+
+(defrecord Block [color position])
+
+(defn block [& {:keys [color position]}]
+  (map->Block {:color color :position position}))
+
+(defn read-block [block]
+  (map->Block block))

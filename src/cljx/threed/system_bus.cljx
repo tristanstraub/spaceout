@@ -15,6 +15,7 @@
             #+clj
             [threed.comms :as comms]
             [threed.message]
+            [threed.universe]
 
             #+cljs
             [cljs.reader]))
@@ -47,6 +48,7 @@
 
   ISendMessage
   (send-message! [this message]
+    (println "sedning" message)
     (-send-message! message))
 
   ISubscribe
@@ -96,7 +98,10 @@
 
     (set! (.-onerror websocket) (fn [] (.error js/console "ws error" js/arguments)))
     (set! (.-onmessage websocket) (fn [e]
+                                    ;; TODO move outside of onmessage
                                     (cljs.reader/register-tag-parser! "threed.message.Message" #'threed.message/read-message)
+                                    (cljs.reader/register-tag-parser! "threed.universe.Block" #'threed.universe/read-block)
+
 
                                     (let [message (cljs.reader/read-string (.-data e))]
                                       (put! channel message))))

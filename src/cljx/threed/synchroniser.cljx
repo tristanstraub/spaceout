@@ -16,19 +16,29 @@
   (start [this]
     (add-watch (:universe state) :synchroniser
                (fn [key reference old-universe new-universe]
-                 (let [new-positions (clojure.set/difference
+                 (let [new-blocks (clojure.set/difference
                                                   (:blocks new-universe)
                                                   (:blocks old-universe))
-                       removed-positions (clojure.set/difference
+                       removed-blocks (clojure.set/difference
                                                       (:blocks old-universe)
                                                       (:blocks new-universe))]
-                   (when (not (empty? new-positions))
-                     ;; TODO reconsider how send-blocks gets transformed and dispatched from client to server
-                     (dispatch! dispatcher (send-blocks new-positions)))
 
-                   (when (not (empty? removed-positions))
+                   (println "new-blocks" (count new-blocks))
+                   (println "removed-blocks" (count removed-blocks))
+
+                   ;; NOTE this might be bouncing
+                   ;; TODO batch add/remove together
+                   ;; TODO reenable for client
+                   #+clj
+                   (when (not (empty? new-blocks))
                      ;; TODO reconsider how send-blocks gets transformed and dispatched from client to server
-                     (dispatch! dispatcher (send-remove-blocks removed-positions))))))
+                     (dispatch! dispatcher (send-blocks new-blocks)))
+
+                   ;; TODO reenable for client
+                   #+clj
+                   (when (not (empty? removed-blocks))
+                     ;; TODO reconsider how send-blocks gets transformed and dispatched from client to server
+                     (dispatch! dispatcher (send-remove-blocks removed-blocks))))))
     this))
 
 

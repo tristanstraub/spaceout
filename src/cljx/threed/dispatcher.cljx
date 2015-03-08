@@ -12,7 +12,7 @@
             #+cljs
             [cljs.core.async :refer [put! chan <!]]
 
-            [threed.universe :refer [remove-positions add-positions set-positions add-position]]
+            [threed.universe :refer [remove-blocks add-blocks set-blocks add-block]]
             [threed.system-bus :refer [subscribe! send-message!]]
             [threed.actions :refer [the-universe]]))
 
@@ -42,7 +42,7 @@
           (recur)))))
 
 ;; TODO does universe belong in dispatcher? as an atom?
-(defrecord Dispatcher [clients system-bus state]
+(defrecord Dispatcher [system-bus state]
   component/Lifecycle
   (start [this]
     (dispatch-actions! this system-bus)
@@ -53,7 +53,7 @@
   (dispatch! [this action]
     (case (:name action)
       ;; Add a new block to the universe
-      :add-block (swap! (:universe state) add-position (:position action))
+      :add-block (swap! (:universe state) add-block (:position action))
 
       :send-blocks
       (when (not (empty? (:blocks action)))
@@ -64,20 +64,26 @@
         (send-message! system-bus (local->remote action)))
 
       ;; TODO control what is allowed on the server
-      :add-blocks (swap! (:universe state) add-positions (:blocks action))
-      :remove-blocks (swap! (:universe state) remove-positions (:blocks action))
+      :add-blocks (do
+                    (println "add-blocks" (count (:blocks action)))
+                    (swap! (:universe state) add-blocks (:blocks action)))
+      :remove-blocks (swap! (:universe state) remove-blocks (:blocks action))
 
       ;; server side send the-universe only
       #+clj
       :send-universe
       #+clj
-      (send-message! system-bus (the-universe (:blocks @(:universe state))))
+      (do
+        (println "sending universe")
+        (send-message! system-bus (the-universe (:blocks @(:universe state)))))
 
       ;; client side replace only
       #+cljs
       :the-universe
       #+cljs
-      (swap! (:universe state) set-positions (:blocks action))
+      (do
+        (println "got the universe" (count (:blocks action)))
+        (swap! (:universe state) set-blocks (:blocks action)))
 
       ;; :else
       (println (str "Unknown action name" (:name action))))))

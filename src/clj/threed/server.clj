@@ -65,10 +65,10 @@
   (component/stop @sys))
 
 (defn add!
-  [positions]
+  [blocks]
   (swap! (get-in @sys [:state :universe])
          (fn [universe]
-           (uni/add-positions universe positions))))
+           (uni/add-blocks universe blocks))))
 
 (defn gen-worlds! [n]
   (add! (gen/gen-worlds n)))
@@ -84,10 +84,10 @@
          (fn [universe]
            (uni/clear universe))))
 
-(defn remove-positions! [positions]
+(defn remove-blocks! [blocks]
   (swap! (get-universe-atom)
          (fn [universe]
-           (uni/remove-positions universe positions))))
+           (uni/remove-blocks universe blocks))))
 
 (defn run [& [port]]
   (defonce stop! (atom nil))
@@ -104,7 +104,8 @@
                     (stop-web-server!)
                     (stop-system!))))
 
-  (gen-worlds! 16))
+  ;;(gen-worlds! 1)
+  )
 
 (defn -main [& [port]]
   (run port))
