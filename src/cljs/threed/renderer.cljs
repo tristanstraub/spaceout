@@ -93,11 +93,14 @@
                    )))
 
 (defn color->material [color]
-  ;; TODO generalize numbers
-  (color {:red 0
+  (if color
+    ;; TODO generalize numbers
+    (get {:red 0
           :green 6
           :water 12
-          :lava 18}))
+          :lava 18}
+         color)
+    0))
 
 (defn add-blocks [blocks]
   {:name :add-blocks :blocks blocks})
