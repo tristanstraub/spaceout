@@ -42,12 +42,14 @@
                  [ring.middleware.logger "0.5.0"]
                  [quile/component-cljs "0.2.2"]
 
+                 [io.allthethings.utils "0.1.7-SNAPSHOT"
+                  :exclusions [org.clojure/clojure]]
                  ]
 
   :plugins [[lein-cljsbuild "1.0.3"]
             [lein-environ "1.0.0"]
             [lein-figwheel "0.1.4-SNAPSHOT"]
-            [com.keminglabs/cljx "0.4.0" :exclusions [org.clojure/clojure]]]
+            [com.keminglabs/cljx "0.6.0" :exclusions [org.clojure/clojure]]]
 
   :test-paths ["test/clj"]
 

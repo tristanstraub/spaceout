@@ -4,6 +4,7 @@
             [threed.system-bus :as system-bus]
             [threed.synchroniser :refer [synchroniser]]
             [threed.universe :refer [create-universe add-block]]))
+
 ;; TODO clj/cljs tags should only be used for implementation replacement
 ;; -- not for configuration. Testing is difficult if it is used for
 ;; configuration
@@ -13,5 +14,7 @@
              :state {:universe (atom (create-universe))}
              :system-bus (system-bus)
              :dispatcher (component/using (dispatcher) [:system-bus :state])
+             :websockets (ws/connection-feed)
+             :connector (component/using (connector) [:system-bus :websockets])
              ;; universe should be higher than dispatcher
              :synchroniser (component/using (synchroniser) [:dispatcher :state])))

@@ -42,7 +42,7 @@
           (recur)))))
 
 ;; TODO does universe belong in dispatcher? as an atom?
-(defrecord Dispatcher [system-bus state]
+(defrecord Dispatcher [system-bus state connection-feed]
   component/Lifecycle
   (start [this]
     (dispatch-actions! this system-bus)

@@ -18,9 +18,9 @@
             [threed.universe]
 
             #+cljs
-            [cljs.reader]))
+            [cljs.reader]
 
-(declare <get-messages -send-message!)
+            [io.allthethings.net.connection :as cn]))
 
 (defprotocol ISendMessage
   (send-message! [this message]))
@@ -33,18 +33,24 @@
     (= (select-keys message topic-keys)
        (select-keys topic topic-keys))))
 
-(defrecord SystemBus [subscriptions messages]
+(defrecord SystemBus [subscriptions bus]
   component/Lifecycle
   (start [this]
     (let [subscriptions (atom [])
-          messages (<get-messages)]
+          incoming (cn/<incoming bus)]
       (go (loop []
-            (let [message (<! messages)]
+            (let [message (<! incoming)]
               (doseq [{:keys [topic subscription-channel]} @subscriptions]
                 (when (topic-matches? topic message)
                   (put! subscription-channel message)))
               (recur))))
-      (assoc this :subscriptions subscriptions :messages messages)))
+      (assoc this :subscriptions subscriptions)))
+
+  cn/IIncoming
+  (<incoming [this] (cn/<incoming bus))
+
+  cn/IOutgoing
+  (>outgoing [this] (cn/>outgoing bus))
 
   ISendMessage
   (send-message! [this message]
@@ -58,56 +64,4 @@
       channel)))
 
 (defn system-bus []
-  (map->SystemBus {}))
-
-#+cljs
-(defn get-ws-url []
-  (let [loc (.-location js/window)
-        schema (if (= (.-protocol loc) "https:")
-                 "wss:"
-                 "ws:")]
-    (str schema "//" (.-host loc) (.-pathname loc) "ws")))
-
-#+cljs
-(defn get-websocket []
-  (defonce websocket (atom nil))
-  (swap! websocket #(or % (js/WebSocket. (get-ws-url)))))
-
-#+cljs
-(defonce websocket-queue (chan))
-
-;; TODO Needs a client end-point argument
-(defn -send-message! [message]
-  #+cljs
-  (put! websocket-queue message)
-
-  #+clj
-  (comms/send-message! message))
-
-#+cljs
-(defn- <get-messages []
-  (let [channel (chan)
-        websocket (get-websocket)]
-
-    (set! (.-onopen websocket) (fn [e]
-                                 (go (loop []
-                                       (let [message (<! websocket-queue)]
-                                         (.send websocket (binding [*print-length* false]
-                                                            (pr-str message))))
-                                       (recur)))))
-
-    (set! (.-onerror websocket) (fn [] (.error js/console "ws error" js/arguments)))
-    (set! (.-onmessage websocket) (fn [e]
-                                    ;; TODO move outside of onmessage
-                                    (cljs.reader/register-tag-parser! "threed.message.Message" #'threed.message/read-message)
-                                    (cljs.reader/register-tag-parser! "threed.universe.Block" #'threed.universe/read-block)
-
-
-                                    (let [message (cljs.reader/read-string (.-data e))]
-                                      (put! channel message))))
-
-    channel))
-
-#+clj
-(defn- <get-messages []
-  (comms/<get-messages))
+  (map->SystemBus {:bus (cn/connection)}))

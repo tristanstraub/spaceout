@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [quile.component :as component]
             [threed.dev :refer [is-dev? inject-devmode-html browser-repl start-figwheel]]
-            [compojure.core :refer [GET POST defroutes]]
+            [compojure.core :refer [GET POST defroutes routes]]
             [compojure.route :refer [resources]]
             [net.cgrand.enlive-html :refer [deftemplate]]
             [net.cgrand.reload :refer [auto-reload]]
@@ -24,17 +24,29 @@
             [threed.message :as message]
             [threed.generator :as gen]
             [threed.universe :as uni]
-            [threed.math :as math]))
+            [threed.math :as math]
+            [io.allthethings.net.websockets :as ws]
+            [io.allthethings.net.connection :as cn]
+            [io.allthethings.edn-coder :as edn :refer [edn-coder]]
+
+            [clojure.core.async
+             :as a
+             :refer [put! >! <!
+                     chan buffer close!
+                     alts!
+                     go
+                     timeout]]))
 
 (deftemplate page
   (io/resource "index.html") [] [:body] (if is-dev? inject-devmode-html identity))
 
-(defroutes routes
-  (resources "/")
-  (GET "/ws" [] comms/ws)
-  (GET "/*" req (page)))
+(defn site-routes [connection-feed]
+  (routes (resources "/")
+          (ws/route connection-feed "/ws") ;;comms/ws
 
-(def http-handler
+          (GET "/*" req (page))))
+
+(defn http-handler [connection-feed]
   (let [ring-defaults-config api-defaults
         ;; TODO csrf
         ;; (assoc-in api-defaults [:security :anti-forgery]
@@ -42,16 +54,16 @@
         ]
     (wrap-edn-params
      (if is-dev?
-       (reload/wrap-reload (wrap-defaults #'routes ring-defaults-config))
-       (wrap-defaults routes ring-defaults-config))
+       (reload/wrap-reload (wrap-defaults (site-routes connection-feed) ring-defaults-config))
+       (wrap-defaults (site-routes connection-feed) ring-defaults-config))
 
      ;;(logger/wrap-with-logger)
      )))
 
-(defn run-web-server [& [port]]
+(defn run-web-server [connection-feed & [port]]
   (let [port (Integer. (or port (env :port) 3000))]
     (print "Starting web server on port" port ".\n")
-    (http-kit/run-server http-handler {:port port})))
+    (http-kit/run-server (http-handler connection-feed) {:port port})))
 
 (defn run-auto-reload [& [port]]
   (auto-reload *ns*)
@@ -103,7 +115,13 @@
   (when is-dev?
     (run-auto-reload))
 
-  (let [stop-web-server! (run-web-server port)]
+  (let [
+
+        stop-web-server! (run-web-server connection-feed port)
+        coder (edn-coder {:readers {'threed.message.Message #'threed.message/read-message
+                                    'threed.universe.Block #'threed.universe/read-block}})]
+
+
     (reset! stop! (fn []
                     (stop-web-server!)
                     (stop-system!))))
